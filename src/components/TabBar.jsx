@@ -1,52 +1,66 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import TwemojiImg from './TwemojiImg'
 
-export default function TabBar() {
+const tabs = [
+  { path: '/', label: '지도', twemoji: '1f5fa' },
+  { path: '/team', label: null, twemoji: '1f91d' },
+  { path: '/profile', label: '내 정보', customSrc: '/도트삐야_아이콘.png' },
+]
+
+export default function TabBar({ hasTeam }) {
   const navigate = useNavigate()
-  const location = useLocation()
+  const { pathname } = useLocation()
 
-  const tabs = [
-    { path: '/', label: '지도', icon: '🗺️' },
-    { path: '/team', label: '연결', icon: '🤝' },
-    { path: '/profile', label: '내 정보', icon: '🐥' },
-  ]
+  if (pathname === '/login' || pathname === '/register') return null
 
   return (
     <div style={{
       position: 'fixed',
-      bottom: 0,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '100%',
-      maxWidth: 430,
-      background: 'white',
-      borderTop: '1px solid #FFD6E0',
+      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+      left: 'max(14px, calc(50vw - 201px))',
+      right: 'max(14px, calc(50vw - 201px))',
+      background: 'rgba(255,255,255,0.92)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
+      borderRadius: 28,
+      boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 6px rgba(0,0,0,0.06)',
+      border: '1px solid rgba(255,220,235,0.5)',
       display: 'flex',
       justifyContent: 'space-around',
-      padding: '8px 0 16px',
+      paddingTop: 8,
+      paddingBottom: 8,
       zIndex: 100,
     }}>
-      {tabs.map(tab => (
-        <button
-          key={tab.path}
-          onClick={() => navigate(tab.path)}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 4,
-            background: 'none',
-            fontSize: 22,
-            opacity: location.pathname === tab.path ? 1 : 0.4,
-          }}
-        >
-          <span>{tab.icon}</span>
-          <span style={{
-            fontSize: 11,
-            color: location.pathname === tab.path ? '#FF8FAB' : '#999',
-            fontWeight: location.pathname === tab.path ? 'bold' : 'normal',
-          }}>{tab.label}</span>
-        </button>
-      ))}
+      {tabs.map(tab => {
+        const active = pathname === tab.path
+        const label = tab.path === '/team' ? (hasTeam ? '팀' : '연결') : tab.label
+        return (
+          <button
+            key={tab.path}
+            onClick={() => navigate(tab.path)}
+            style={{
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 3,
+              background: active ? 'rgba(255,123,169,0.12)' : 'none',
+              padding: '6px 22px',
+              borderRadius: 18,
+              transition: 'background 0.2s ease',
+            }}
+          >
+            {tab.customSrc
+              ? <img src={tab.customSrc} width={24} height={24} alt="" draggable={false} style={{ objectFit: 'contain', opacity: active ? 1 : 0.35 }} />
+              : <TwemojiImg code={tab.twemoji} size={24} style={{ opacity: active ? 1 : 0.35 }} />
+            }
+            <span style={{
+              fontSize: 13, fontWeight: active ? 700 : 400,
+              color: active ? '#FF7BA9' : '#B0B0B0',
+              letterSpacing: '-0.2px',
+            }}>
+              {label}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }

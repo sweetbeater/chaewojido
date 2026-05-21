@@ -1,5 +1,5 @@
-importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js')
-importScripts('https://www.gstatic.com/firebasejs/10.0.0/firebase-messaging-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/11.7.0/firebase-app-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/11.7.0/firebase-messaging-compat.js')
 
 firebase.initializeApp({
   apiKey: "AIzaSyBdzqBzy-oon-iktPSwo5seOQ6MrbinoGw",
@@ -17,5 +17,6 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, {
     body,
     icon: '/삐야_아이콘.png',
+    badge: '/삐야_아이콘.png',
   })
 })

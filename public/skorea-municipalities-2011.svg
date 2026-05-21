@@ -1882,7 +1882,4 @@
 </g>
 </g>
 </g>
-<!-- QGIS extent for clipping, eg in Inkscape -->
-<g id="qgisviewbox" inkscape:groupmode="layer" inkscape:label="qgisviewbox" stroke="rgb(255,0,0)" stroke-width="1" fill="none" >
-<path d="M 0,775 L 765,775 L 765,0 L 0,0 L 0,775 " />
-</g></svg>
+</svg>

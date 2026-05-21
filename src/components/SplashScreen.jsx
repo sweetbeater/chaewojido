@@ -9,7 +9,7 @@ export default function SplashScreen() {
       background: '#FFF9FB',
     }}>
       <img
-        src="/삐야_아이콘.png"
+        src="/도트삐야_아이콘.png"
         alt="삐야"
         style={{ width: 120, height: 120, objectFit: 'contain' }}
       />

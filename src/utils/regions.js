@@ -188,6 +188,9 @@ export const SVG_TO_REGION = {
   // 제주도
   "2":"jeju_jeju",
   "1":"jeju_seogwipo",
+
+  // 독도
+  "252":"dokdo",
 }
 
 export const TOTAL_REGIONS = new Set(Object.values(SVG_TO_REGION)).size
@@ -360,6 +363,7 @@ export const REGION_INFO = {
   "gyeongnam_hapcheon": { name: "경남 합천군", short: "합천" },
   "jeju_jeju": { name: "제주 제주시", short: "제주" },
   "jeju_seogwipo": { name: "제주 서귀포시", short: "서귀포" },
+  "dokdo": { name: "독도", short: "독도" },
 }
 
 export const REGION_MAP = Object.fromEntries(
@@ -379,11 +383,27 @@ export const getRegionId = (svgNum) => {
   return SVG_TO_REGION[String(svgNum)] || null
 }
 
-// 같은 regionId를 가진 SVG 그룹들 (색칠 시 같이 색칠)
 export const getGroupsBySvgNum = (svgNum) => {
   const regionId = SVG_TO_REGION[String(svgNum)]
   if (!regionId) return [String(svgNum)]
   return Object.entries(SVG_TO_REGION)
     .filter(([, id]) => id === regionId)
     .map(([num]) => num)
+}
+
+export const searchRegions = (query) => {
+  const q = query.trim()
+  if (!q) return []
+  const seen = new Set()
+  const results = []
+  for (const [svgNum, regionId] of Object.entries(SVG_TO_REGION)) {
+    if (seen.has(regionId)) continue
+    seen.add(regionId)
+    const info = REGION_INFO[regionId]
+    if (!info) continue
+    if (info.name.includes(q) || info.short.includes(q)) {
+      results.push({ svgNum, name: info.name })
+    }
+  }
+  return results.slice(0, 6)
 }

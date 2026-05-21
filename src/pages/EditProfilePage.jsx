@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
-import { updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
+import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, arrayRemove } from 'firebase/firestore'
+import { updatePassword, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, EmailAuthProvider, GoogleAuthProvider } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from '../firebase'
 import { useNavigate } from 'react-router-dom'
@@ -17,6 +17,7 @@ export default function EditProfilePage({ user }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const navigate = useNavigate()
+  const isGoogleUser = user?.providerData?.some(p => p.providerId === 'google.com')
 
   useEffect(() => {
     if (!user) return
@@ -52,21 +53,14 @@ export default function EditProfilePage({ user }) {
 
       const updates = { photoURL }
 
-      // 닉네임 변경 (1회만)
       if (nickname !== profile?.nickname) {
-        if (profile?.nicknameChanged) {
-          setMessage('닉네임은 1회만 변경 가능해요')
-          setLoading(false)
-          return
-        }
         updates.nickname = nickname
-        updates.nicknameChanged = true
       }
 
       await updateDoc(doc(db, 'users', user.uid), updates)
 
-      // 비밀번호 변경
-      if (newPassword) {
+      // 비밀번호 변경 (이메일 유저만)
+      if (!isGoogleUser && newPassword) {
         if (!currentPassword) {
           setMessage('현재 비밀번호를 입력해주세요')
           setLoading(false)
@@ -92,15 +86,51 @@ export default function EditProfilePage({ user }) {
   }
 
   const handleDelete = async () => {
-    if (!deletePassword) return setMessage('비밀번호를 입력해주세요')
     try {
-      const credential = EmailAuthProvider.credential(user.email, deletePassword)
-      await reauthenticateWithCredential(user, credential)
+      if (isGoogleUser) {
+        await reauthenticateWithPopup(user, new GoogleAuthProvider())
+      } else {
+        if (!deletePassword) return setMessage('비밀번호를 입력해주세요')
+        const credential = EmailAuthProvider.credential(user.email, deletePassword)
+        await reauthenticateWithCredential(user, credential)
+      }
+
+      // 개인 기록 삭제
+      const personalRecords = await getDocs(collection(db, 'users', user.uid, 'records'))
+      for (const d of personalRecords.docs) await deleteDoc(d.ref)
+
+      // 팀 처리
+      if (profile?.teamId) {
+        const teamSnap = await getDoc(doc(db, 'teams', profile.teamId))
+        if (teamSnap.exists()) {
+          const members = teamSnap.data().members || []
+          if (members.length <= 2) {
+            // 2명 팀 → 팀 해체: 팀 기록 전체 삭제 + 팀 문서 삭제 + 남은 멤버 초기화
+            const teamRecords = await getDocs(collection(db, 'teams', profile.teamId, 'records'))
+            for (const d of teamRecords.docs) await deleteDoc(d.ref)
+            await deleteDoc(doc(db, 'teams', profile.teamId))
+            for (const uid of members) {
+              if (uid !== user.uid) {
+                await updateDoc(doc(db, 'users', uid), { teamId: null, visitedRegions: [] })
+              }
+            }
+          } else {
+            // 3명+ → 탈퇴자만 멤버에서 제거, 팀 기록은 유지
+            await updateDoc(doc(db, 'teams', profile.teamId), { members: arrayRemove(user.uid) })
+          }
+        }
+      }
+
+      // 유저 문서 삭제
+      await deleteDoc(doc(db, 'users', user.uid))
+
       await deleteUser(user)
       navigate('/login')
     } catch (err) {
       if (err.code === 'auth/wrong-password') {
         setMessage('비밀번호가 틀렸어요')
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setMessage('구글 인증이 취소됐어요')
       } else {
         setMessage('탈퇴에 실패했어요')
       }
@@ -108,8 +138,8 @@ export default function EditProfilePage({ user }) {
   }
 
   return (
-    <div style={{ padding: '24px 20px 100px', background: '#FFF9FB', minHeight: '100vh' }}>
-      <button onClick={() => navigate('/profile')} style={{ background: 'none', fontSize: 20, marginBottom: 16, color: '#FF8FAB' }}>←</button>
+    <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px 100px', background: '#FFF9FB', minHeight: '100vh' }}>
+      <button onClick={() => navigate('/profile')} style={{ background: 'none', border: 'none', fontSize: 22, color: '#FF8FAB', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer', minHeight: 44 }}>←</button>
       <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 24 }}>프로필 수정</h2>
 
       {/* 프로필 사진 */}
@@ -133,39 +163,34 @@ export default function EditProfilePage({ user }) {
 
       {/* 닉네임 */}
       <div style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 6 }}>
-          닉네임 {profile?.nicknameChanged && <span style={{ color: '#FFB3C6' }}>(변경 불가)</span>}
-        </p>
+        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 6 }}>닉네임</p>
         <input
           value={nickname}
           onChange={e => setNickname(e.target.value)}
-          disabled={profile?.nicknameChanged}
-          style={{
-            ...inputStyle,
-            background: profile?.nicknameChanged ? '#F5F5F5' : 'white',
-            color: profile?.nicknameChanged ? '#aaa' : '#333',
-          }}
-        />
-      </div>
-
-      {/* 비밀번호 변경 */}
-      <div style={{ marginBottom: 24 }}>
-        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 6 }}>비밀번호 변경</p>
-        <input
-          type="password"
-          placeholder="현재 비밀번호"
-          value={currentPassword}
-          onChange={e => setCurrentPassword(e.target.value)}
-          style={{ ...inputStyle, marginBottom: 8 }}
-        />
-        <input
-          type="password"
-          placeholder="새 비밀번호 (영문+숫자+특수문자)"
-          value={newPassword}
-          onChange={e => setNewPassword(e.target.value)}
           style={inputStyle}
         />
       </div>
+
+      {/* 비밀번호 변경 — 이메일 유저만 표시 */}
+      {!isGoogleUser && (
+        <div style={{ marginBottom: 24 }}>
+          <p style={{ fontSize: 13, color: '#aaa', marginBottom: 6 }}>비밀번호 변경</p>
+          <input
+            type="password"
+            placeholder="현재 비밀번호"
+            value={currentPassword}
+            onChange={e => setCurrentPassword(e.target.value)}
+            style={{ ...inputStyle, marginBottom: 8 }}
+          />
+          <input
+            type="password"
+            placeholder="새 비밀번호 (영문+숫자+특수문자)"
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+      )}
 
       {message && (
         <p style={{
@@ -200,16 +225,22 @@ export default function EditProfilePage({ user }) {
           <p style={{ fontSize: 14, color: '#FF6B6B', fontWeight: 'bold', marginBottom: 8 }}>
             ⚠️ 정말 탈퇴하시겠어요?
           </p>
-          <p style={{ fontSize: 12, color: '#aaa', marginBottom: 12, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: '#aaa', marginBottom: 12, lineHeight: 1.6 }}>
             탈퇴하면 모든 데이터가 삭제되고 복구할 수 없어요.
           </p>
-          <input
-            type="password"
-            placeholder="비밀번호 확인"
-            value={deletePassword}
-            onChange={e => setDeletePassword(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 8 }}
-          />
+          {isGoogleUser ? (
+            <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
+              구글 계정으로 본인 확인 후 탈퇴됩니다.
+            </p>
+          ) : (
+            <input
+              type="password"
+              placeholder="비밀번호 확인"
+              value={deletePassword}
+              onChange={e => setDeletePassword(e.target.value)}
+              style={{ ...inputStyle, marginBottom: 8 }}
+            />
+          )}
           <button onClick={handleDelete} style={{ ...btnStyle, background: '#FF6B6B' }}>
             탈퇴하기
           </button>

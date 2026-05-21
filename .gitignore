@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# User data exports (sensitive)
+users.json
+users_export.json

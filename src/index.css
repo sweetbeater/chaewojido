@@ -1,26 +1,99 @@
+@font-face {
+  font-family: 'NeoDGM';
+  src: url('/fonts/NeoDGM.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  height: 100%;
+}
+
+html {
+  background-color: white;
 }
 
 body {
-  font-family: 'Nanum Gothic', sans-serif;
-  background-color: #FFF9FB;
-  color: #333;
+  font-family: 'NeoDGM', sans-serif;
+  font-size: 15px;
+  background-color: #FFFDF8;
+  color: #2D2D2D;
   max-width: 430px;
   margin: 0 auto;
-  min-height: 100vh;
+  min-height: 100%;
   position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
+/* 젤리 버튼 효과 */
 button {
   cursor: pointer;
   border: none;
   outline: none;
+  font-family: inherit;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+button:active {
+  transform: scale(0.91);
+  transition: transform 0.08s ease;
+}
+
+input, textarea, select {
+  font-family: inherit;
 }
 
 a {
   text-decoration: none;
   color: inherit;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+
+/* 배지 획득 팝업 - 아이콘 스핀 */
+@keyframes badgeSpin {
+  0%   { transform: scale(0) rotate(-180deg); }
+  60%  { transform: scale(1.25) rotate(15deg); }
+  80%  { transform: scale(0.92) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+/* 배지 팝업 파티클 */
+@keyframes particleFly {
+  0%   { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0); opacity: 0; }
+}
+
+/* 지역 색칠 "퐁!" 애니메이션 */
+@keyframes regionPop {
+  0%   { transform: scale(0.7); opacity: 0.6; }
+  55%  { transform: scale(1.14); }
+  78%  { transform: scale(0.96); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 인라인 SVG 기본 border/outline 제거 */
+svg {
+  border: 0 none;
+  outline: none;
+  box-shadow: none;
+  display: block;
 }

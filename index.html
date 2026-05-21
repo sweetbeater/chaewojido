@@ -1,10 +1,56 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>chaewojido</title>
+    <link rel="icon" href="/삐야_아이콘.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <!-- PWA: iOS 홈 화면 추가 시 standalone 모드 (Safari UI 제거) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="채워지도" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#FF8FAB" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>채워지도</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+    <link rel="preload" href="/skorea-municipalities-2011.svg" as="fetch" crossorigin />
+    <script>
+    (function(){
+      var ua = navigator.userAgent;
+      if(!/KAKAOTALK/i.test(ua)) return;
+      var isIOS = /iPhone|iPad|iPod/i.test(ua);
+      var url = location.href;
+      if(isIOS){
+        try{ location.href = url.replace(/^https/,'x-safari-https'); }catch(e){}
+      } else {
+        location.href = 'intent://'+location.host+location.pathname+location.search+'#Intent;scheme=https;package=com.android.chrome;end';
+      }
+      document.addEventListener('DOMContentLoaded',function(){
+        var s=document.createElement('style');
+        s.textContent='#kk-overlay{position:fixed;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;z-index:99999;font-family:-apple-system,system-ui,sans-serif;text-align:center}#kk-overlay img{width:80px;margin-bottom:20px}#kk-overlay h2{font-size:18px;font-weight:800;color:#2D2D2D;margin-bottom:10px}#kk-overlay p{font-size:13px;color:#888;line-height:1.8;margin-bottom:28px}#kk-overlay button{width:100%;max-width:280px;padding:14px;border-radius:14px;background:#FF8FAB;color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;font-family:inherit}';
+        document.head.appendChild(s);
+        var d=document.createElement('div');
+        d.id='kk-overlay';
+        d.innerHTML='<img src="/삐야_아이콘.png" alt="">'
+          +'<h2>카카오톡에서는 앱이 열리지 않아요</h2>'
+          +'<p>'+(isIOS
+            ? '우측 상단 <b>···</b> 버튼을 누른 후<br><b>Safari로 열기</b>를 선택해 주세요'
+            : '링크를 복사해 Chrome 주소창에<br>붙여넣기 해 주세요')
+          +'</p>'
+          +'<button id="kk-copy">🔗 링크 복사하기</button>';
+        document.body.appendChild(d);
+        document.getElementById('kk-copy').onclick=function(){
+          var btn=this;
+          (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject())
+            .catch(function(){var t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);})
+            .then(function(){btn.textContent='✅ 복사됨!';setTimeout(function(){btn.textContent='🔗 링크 복사하기';},2000);});
+        };
+      });
+    })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

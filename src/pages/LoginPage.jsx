@@ -1,12 +1,35 @@
 import { useState } from 'react'
-import { signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup } from 'firebase/auth'
-import { auth } from '../firebase'
+import { signInWithEmailAndPassword, signInAnonymously, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
+import { auth, db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
+
+const DOTS = [
+  { left: '6%',  top: '7%',  s: 8, c: '#FFD85C' },
+  { left: '20%', top: '3%',  s: 5, c: '#8FE3CF' },
+  { left: '38%', top: '5%',  s: 6, c: '#FF7BA9' },
+  { left: '58%', top: '2%',  s: 4, c: '#FFD85C' },
+  { left: '76%', top: '6%',  s: 7, c: '#8FE3CF' },
+  { left: '90%', top: '3%',  s: 5, c: '#FF7BA9' },
+  { left: '3%',  top: '18%', s: 5, c: '#8FE3CF' },
+  { left: '88%', top: '16%', s: 6, c: '#FFD85C' },
+  { left: '14%', top: '28%', s: 4, c: '#FF7BA9' },
+  { left: '72%', top: '22%', s: 8, c: '#FFD85C' },
+  { left: '46%', top: '12%', s: 5, c: '#8FE3CF' },
+  { left: '28%', top: '22%', s: 6, c: '#FFD85C' },
+  { left: '64%', top: '17%', s: 4, c: '#FF7BA9' },
+  { left: '93%', top: '30%', s: 5, c: '#8FE3CF' },
+  { left: '7%',  top: '36%', s: 6, c: '#FFD85C' },
+  { left: '80%', top: '38%', s: 4, c: '#FF7BA9' },
+  { left: '50%', top: '30%', s: 5, c: '#FFD85C' },
+  { left: '32%', top: '38%', s: 4, c: '#8FE3CF' },
+]
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [resetSent, setResetSent] = useState(false)
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
@@ -14,17 +37,23 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password)
       navigate('/')
-    } catch (err) {
+    } catch {
       setError('이메일 또는 비밀번호가 올바르지 않아요')
     }
   }
 
   const handleGoogle = async () => {
     try {
-      const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
+      const result = await signInWithPopup(auth, new GoogleAuthProvider())
+      const snap = await getDoc(doc(db, 'users', result.user.uid))
+      if (!snap.exists()) {
+        await signOut(auth)
+        setError('가입된 계정이 없어요. 먼저 회원가입을 해주세요.')
+        return
+      }
+      // nickname 없으면 App.jsx의 CompleteProfileScreen이 처리
       navigate('/')
-    } catch (err) {
+    } catch {
       setError('구글 로그인에 실패했어요')
     }
   }
@@ -33,98 +62,166 @@ export default function LoginPage() {
     try {
       await signInAnonymously(auth)
       navigate('/')
-    } catch (err) {
+    } catch {
       setError('게스트 로그인에 실패했어요')
+    }
+  }
+
+  const handleReset = async () => {
+    if (!email.trim()) return setError('비밀번호를 재설정할 이메일을 입력해주세요')
+    try {
+      await sendPasswordResetEmail(auth, email)
+      setResetSent(true)
+      setError('')
+    } catch {
+      setError('이메일을 찾을 수 없어요')
     }
   }
 
   return (
     <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      padding: '0 32px',
-      background: '#FFF9FB',
+      position: 'fixed', inset: 0,
+      display: 'flex', flexDirection: 'column',
+      background: 'linear-gradient(155deg, #4A0E8F 0%, #9B3FD4 22%, #E91E8C 50%, #FF5C47 75%, #FFD166 100%)',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
     }}>
-      <img src="/삐야_아이콘.png" alt="삐야" style={{ width: 100, marginBottom: 8 }} />
-      <h1 style={{ fontSize: 28, color: '#FF8FAB', marginBottom: 4 }}>채워지도</h1>
-      <p style={{ fontSize: 13, color: '#aaa', marginBottom: 32 }}>삐야와 함께 여행 지도를 채워보세요</p>
+      {/* 픽셀 도트 장식 */}
+      {DOTS.map((d, i) => (
+        <div key={i} style={{
+          position: 'absolute', left: d.left, top: d.top,
+          width: d.s, height: d.s, background: d.c, opacity: 0.7,
+          pointerEvents: 'none',
+        }} />
+      ))}
 
-      <form onSubmit={handleLogin} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input
-          type="email"
-          placeholder="이메일"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          style={inputStyle}
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          style={inputStyle}
-        />
-        {error && <p style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center' }}>{error}</p>}
-        <button type="submit" style={btnStyle}>로그인</button>
-      </form>
+      {/* 히어로 섹션 */}
+      <div style={{
+        flex: '0 1 auto', minHeight: 160,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 32px) 28px 28px',
+        position: 'relative', zIndex: 1,
+      }}>
+        {/* 삐야 픽셀 프레임 */}
+        <div style={{
+          width: 96, height: 96,
+          background: 'rgba(255,255,255,0.18)',
+          border: '3px solid rgba(255,255,255,0.5)',
+          borderRadius: 6,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 20,
+          boxShadow: '0 0 0 3px rgba(255,255,255,0.15), 0 8px 32px rgba(0,0,0,0.25)',
+        }}>
+          <img src="/도트삐야_아이콘.png" alt="삐야" style={{ width: 78, filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.2))' }} />
+        </div>
 
-      {/* 구글 로그인 */}
-      <button onClick={handleGoogle} style={{
-        ...btnStyle,
+        <h1 style={{
+          fontFamily: "'NeoDGM', sans-serif",
+          fontSize: 38,
+          fontWeight: 400,
+          color: 'white',
+          marginBottom: 8,
+          textShadow: '0 2px 16px rgba(0,0,0,0.25)',
+          lineHeight: 1.2,
+        }}>
+          채워지도
+        </h1>
+        <p style={{
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.75)',
+          letterSpacing: '0.3px',
+          textShadow: '0 1px 6px rgba(0,0,0,0.2)',
+        }}>
+          삐야와 함께하는 지도 탐방
+        </p>
+      </div>
+
+      {/* 폼 카드 */}
+      <div style={{
         background: 'white',
-        color: '#333',
-        border: '1.5px solid #FFD6E0',
-        marginTop: 8,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
+        borderRadius: '28px 28px 0 0',
+        padding: `32px 28px calc(env(safe-area-inset-bottom, 0px) + 28px)`,
+        boxShadow: '0 -6px 32px rgba(0,0,0,0.12)',
+        position: 'relative', zIndex: 1,
       }}>
-        <span>🔵</span> 구글로 로그인
-      </button>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <input
+            type="email" placeholder="이메일"
+            value={email} onChange={e => setEmail(e.target.value)}
+            style={inputStyle}
+          />
+          <input
+            type="password" placeholder="비밀번호"
+            value={password} onChange={e => setPassword(e.target.value)}
+            style={inputStyle}
+          />
+          {error && <p style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center', fontWeight: 500 }}>{error}</p>}
+          {resetSent && <p style={{ color: '#FF7BA9', fontSize: 13, textAlign: 'center', fontWeight: 500 }}>재설정 이메일을 보냈어요 ✉️</p>}
+          <button type="submit" style={primaryBtn}>로그인</button>
+        </form>
 
-      {/* 게스트 모드 */}
-      <button onClick={handleGuest} style={{
-        ...btnStyle,
-        background: '#F5F5F5',
-        color: '#999',
-        marginTop: 8,
-      }}>
-        게스트로 시작하기
-      </button>
+        <button onClick={handleReset} style={{ marginTop: 10, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '10px auto 0' }}>
+          비밀번호를 잊으셨나요?
+        </button>
 
-      <p style={{ fontSize: 11, color: '#ccc', marginTop: 8, textAlign: 'center', lineHeight: 1.6 }}>
-        게스트 모드는 서버 저장 및 팀 기능을 사용할 수 없어요
-      </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 14px' }}>
+          <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
+          <span style={{ fontSize: 13, color: '#C0C0C0' }}>또는</span>
+          <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
+        </div>
 
-      <button
-        onClick={() => navigate('/register')}
-        style={{ marginTop: 16, fontSize: 13, color: '#aaa', background: 'none' }}
-      >
-        아직 계정이 없으신가요? <span style={{ color: '#FF8FAB' }}>회원가입</span>
-      </button>
+        <button onClick={handleGoogle} style={{
+          ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <GoogleIcon />
+          구글로 로그인
+        </button>
+
+        <button onClick={handleGuest} style={{ ...outlineBtn, marginTop: 10, color: '#888', borderColor: '#E0E0E0' }}>
+          👤 게스트로 시작하기
+        </button>
+
+        <p style={{ fontSize: 10, color: '#C0C0C0', marginTop: 8, textAlign: 'center', lineHeight: 1.7 }}>
+          게스트 모드는 서버 저장 및 팀 기능을 사용할 수 없어요
+        </p>
+
+        <button onClick={() => navigate('/register')} style={{ marginTop: 16, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '16px auto 0' }}>
+          아직 계정이 없으신가요? <span style={{ color: '#FF7BA9', fontWeight: 700 }}>회원가입</span>
+        </button>
+      </div>
     </div>
   )
 }
 
-const inputStyle = {
-  padding: '14px 16px',
-  borderRadius: 12,
-  border: '1.5px solid #FFD6E0',
-  fontSize: 14,
-  outline: 'none',
-  background: 'white',
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+      <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.548 0 9s.348 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+  )
 }
 
-const btnStyle = {
-  width: '100%',
-  padding: '14px',
-  borderRadius: 12,
-  background: '#FF8FAB',
-  color: 'white',
-  fontSize: 16,
-  fontWeight: 'bold',
+const inputStyle = {
+  padding: '14px 18px', borderRadius: 16,
+  border: '1.5px solid #FFD6E0', fontSize: 14,
+  outline: 'none', background: 'white', width: '100%',
+  letterSpacing: '-0.1px',
+}
+
+const primaryBtn = {
+  width: '100%', padding: '15px', borderRadius: 16,
+  background: 'linear-gradient(135deg, #FF7BA9, #FF5499)',
+  color: 'white', fontSize: 15, fontWeight: 700,
+  letterSpacing: '-0.2px',
+  boxShadow: '0 4px 16px rgba(255,123,169,0.4)',
+}
+
+const outlineBtn = {
+  width: '100%', padding: '13px', borderRadius: 16,
+  background: 'white', border: '1.5px solid #FFD6E0',
+  color: '#2D2D2D', fontSize: 14, fontWeight: 600,
 }

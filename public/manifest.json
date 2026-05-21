@@ -1,0 +1,25 @@
+{
+  "name": "채워지도",
+  "short_name": "채워지도",
+  "description": "삐야와 함께 대한민국 지도를 채워보세요",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFF9FB",
+  "theme_color": "#FF8FAB",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/삐야_아이콘.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
