@@ -5,12 +5,12 @@ import { getStorage } from 'firebase/storage'
 import { getMessaging, getToken, deleteToken, onMessage } from 'firebase/messaging'
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBdzqBzy-oon-iktPSwo5seOQ6MrbinoGw",
-  authDomain: "chaewojido-17bdc.firebaseapp.com",
-  projectId: "chaewojido-17bdc",
-  storageBucket: "chaewojido-17bdc.firebasestorage.app",
-  messagingSenderId: "613944690130",
-  appId: "1:613944690130:web:d7dad17b42d5201eb1740b"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
 
 const app = initializeApp(firebaseConfig)
@@ -44,7 +44,7 @@ export const requestNotificationPermission = async (uid) => {
     }
 
     const tokenOpts = {
-      vapidKey: 'BBCxblDU3fA3WqBRNBvycJgshkS8DDCSHXZ68AXjBEruZjnuWJGbnl8SVA31wtBLQGHXBwaFO6kiD48nuM_T8iw'
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
     }
     if (swReg) tokenOpts.serviceWorkerRegistration = swReg
 

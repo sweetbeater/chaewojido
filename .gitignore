@@ -23,6 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment variables (sensitive)
+.env
+.env.local
+.env.*.local
+
 # User data exports (sensitive)
 users.json
 users_export.json
