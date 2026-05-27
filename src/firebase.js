@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
+import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence } from 'firebase/auth'
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getMessaging, getToken, deleteToken, onMessage } from 'firebase/messaging'
 
@@ -15,9 +15,12 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig)
 
-export const auth = getAuth(app)
+// Capacitor/WKWebView 환경에서 iframe 우회: initializeAuth + 명시적 persistence
+export const auth = initializeAuth(app, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+})
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+  localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
 })
 export const storage = getStorage(app)
 let messaging = null

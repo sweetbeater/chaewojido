@@ -104,13 +104,22 @@ export default function App() {
   const onboardingChecked = useRef(false)
 
   useEffect(() => {
+    // 안전망: 8초 안에 auth 응답 없으면 강제로 로딩 해제
+    const timeout = setTimeout(() => setLoading(false), 8000)
+
     const unsub = onAuthStateChanged(auth, async (u) => {
+      clearTimeout(timeout)
       let profileComplete = true
-      if (u && !u.isAnonymous) {
-        const snap = await getDoc(doc(db, 'users', u.uid))
-        profileComplete = snap.exists() && !!snap.data().nickname
-        setNeedsProfile(!profileComplete)
-      } else {
+      try {
+        if (u && !u.isAnonymous) {
+          const snap = await getDoc(doc(db, 'users', u.uid))
+          profileComplete = snap.exists() && !!snap.data().nickname
+          setNeedsProfile(!profileComplete)
+        } else {
+          setNeedsProfile(false)
+        }
+      } catch (err) {
+        console.error('Auth state handler error:', err)
         setNeedsProfile(false)
       }
       setUser(u)
@@ -123,7 +132,7 @@ export default function App() {
         requestNotificationPermission(u.uid)
       }
     })
-    return unsub
+    return () => { clearTimeout(timeout); unsub() }
   }, [])
 
   useEffect(() => {
