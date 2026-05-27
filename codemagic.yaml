@@ -8,8 +8,12 @@ workflows:
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "io.chaewojido.app"
       node: v22
       xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: io.chaewojido.app
     scripts:
       - name: Install dependencies
         script: npm install
@@ -17,14 +21,6 @@ workflows:
         script: npm run build
       - name: Capacitor sync
         script: npx cap sync ios
-      - name: Set up code signing
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files io.chaewojido.app \
-            --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
       - name: Build IPA
         script: |
           xcode-project build-ipa \
