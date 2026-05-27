@@ -163,6 +163,34 @@ export default function TeamPage({ user, onSelectRecord }) {
     navigate('/record-detail')
   }
 
+  // 게스트 모드 — profile 로딩 전에 먼저 처리
+  if (isGuest) {
+    return (
+      <div style={{
+        position: 'fixed', top: 0, bottom: 0,
+        left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: 'env(safe-area-inset-top, 0px) 32px 80px',
+        textAlign: 'center', background: '#FFFDF8', overflowY: 'auto',
+      }}>
+        <img src="/도트삐야_아이콘.png" alt="삐야" style={{ width: 80, marginBottom: 16, opacity: 0.6 }} />
+        <p style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 8 }}>
+          팀 기능은 회원만 사용할 수 있어요
+        </p>
+        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 32, lineHeight: 1.6 }}>
+          게스트 모드에서는 팀 연결이 불가능해요.{'\n'}
+          회원가입 후 팀을 만들어보세요!
+        </p>
+        <button
+          onClick={() => navigate('/register')}
+          style={btnStyle}
+        >
+          회원가입하기 🐥
+        </button>
+      </div>
+    )
+  }
+
   // 프로필 로딩 중
   if (profile === null) {
     return (
@@ -187,34 +215,6 @@ export default function TeamPage({ user, onSelectRecord }) {
         background: '#FFFDF8',
       }}>
         <p style={{ color: '#FFB3C6', fontSize: 14 }}>팀 정보 불러오는 중...</p>
-      </div>
-    )
-  }
-
-  // 게스트 모드
-  if (isGuest) {
-    return (
-      <div style={{
-        position: 'fixed', top: 0, bottom: 0,
-        left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        padding: 'env(safe-area-inset-top, 0px) 32px 80px',
-        textAlign: 'center', background: '#FFFDF8', overflowY: 'auto',
-      }}>
-        <img src="/도트삐야_아이콘.png" alt="삐야" style={{ width: 80, marginBottom: 16, opacity: 0.6 }} />
-        <p style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 8 }}>
-          팀 기능은 회원만 사용할 수 있어요
-        </p>
-        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 32, lineHeight: 1.6 }}>
-          게스트 모드에서는 팀 연결이 불가능해요.{'\n'}
-          회원가입 후 팀을 만들어보세요!
-        </p>
-        <button
-          onClick={() => navigate('/register')}
-          style={btnStyle}
-        >
-          회원가입하기 🐥
-        </button>
       </div>
     )
   }

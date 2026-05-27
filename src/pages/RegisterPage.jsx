@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { createUserWithEmailAndPassword, EmailAuthProvider, linkWithCredential, linkWithPopup, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'
+import { createUserWithEmailAndPassword, EmailAuthProvider, linkWithCredential, linkWithPopup, GoogleAuthProvider, signInWithPopup, signOut, OAuthProvider, signInWithCredential } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
+import { SignInWithApple } from '@capacitor-community/apple-sign-in'
 
 function getGuestRegions() {
   try { return JSON.parse(localStorage.getItem('guestVisitedRegions') || '[]') } catch { return [] }
@@ -19,7 +20,26 @@ function GoogleIcon() {
   )
 }
 
+function AppleIcon() {
+  return (
+    <svg width="15" height="18" viewBox="0 0 15 18" fill="white" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.42 9.6c-.01-1.59.84-2.99 2.08-3.79-.81-1.16-2.07-1.86-3.48-1.89-1.48-.14-2.9.87-3.65.87-.76 0-1.92-.85-3.16-.83C2.21 4.01.5 5.17.5 7.84c0 3.44 2.3 8.68 4.81 8.68 1.22.01 1.7-.79 3.17-.79 1.46 0 1.91.79 3.18.77 2.1-.03 3.57-3.97 3.84-5.4-1.55-.65-3.08-2.05-3.08-3.5zM9.56 2.56C10.37 1.57 10.85.34 10.75 0 9.6.05 8.27.77 7.43 1.79c-.76.92-1.28 2.18-1.16 3.46 1.24.1 2.5-.61 3.29-2.69z"/>
+    </svg>
+  )
+}
+
 const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
+
+function generateNonce(len = 32) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const arr = new Uint8Array(len)
+  crypto.getRandomValues(arr)
+  return Array.from(arr, b => chars[b % chars.length]).join('')
+}
+async function sha256hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
@@ -62,6 +82,43 @@ export default function RegisterPage() {
         setError('이미 사용 중인 이메일이에요')
       } else {
         setError('회원가입에 실패했어요. 이미 사용 중인 이메일일 수 있어요')
+      }
+    }
+  }
+
+  const handleAppleRegister = async () => {
+    try {
+      const rawNonce = generateNonce()
+      const hashedNonce = await sha256hex(rawNonce)
+      const res = await SignInWithApple.authorize({
+        clientId: 'io.chaewojido.app',
+        redirectURI: '',
+        scopes: 'email name',
+        nonce: hashedNonce,
+      })
+      const credential = new OAuthProvider('apple.com').credential({
+        idToken: res.response.identityToken,
+        rawNonce,
+      })
+      const currentUser = auth.currentUser
+      if (currentUser?.isAnonymous) {
+        await linkWithCredential(currentUser, credential)
+      } else {
+        const result = await signInWithCredential(auth, credential)
+        const snap = await getDoc(doc(db, 'users', result.user.uid))
+        if (snap.exists() && snap.data().nickname) {
+          setError('이미 가입된 애플 계정이에요. 로그인해주세요.')
+          return
+        }
+      }
+      navigate('/')
+    } catch (err) {
+      if (err.code === 'auth/credential-already-in-use') {
+        setError('이미 가입된 애플 계정이에요. 로그인해주세요.')
+      } else {
+        const cancelled = ['USER_CANCELLED', 'SIGN_IN_CANCELLED'].includes(err.code) ||
+          (typeof err.message === 'string' && err.message.toLowerCase().includes('cancel'))
+        if (!cancelled) setError('애플 회원가입에 실패했어요')
       }
     }
   }
@@ -172,6 +229,18 @@ export default function RegisterPage() {
         }}>
           <GoogleIcon />
           구글로 회원가입
+        </button>
+      )}
+
+      {isNative && (
+        <button onClick={handleAppleRegister} style={{
+          width: '100%', padding: '13px', borderRadius: 12, marginTop: 10,
+          background: '#000', color: 'white', border: '1.5px solid #000',
+          fontSize: 14, fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <AppleIcon />
+          Apple로 회원가입
         </button>
       )}
 
