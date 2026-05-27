@@ -19,6 +19,8 @@ function GoogleIcon() {
   )
 }
 
+const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
+
 export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -147,15 +149,31 @@ export default function RegisterPage() {
         <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
       </div>
 
-      <button onClick={handleGoogleRegister} style={{
-        width: '100%', padding: '13px', borderRadius: 12,
-        background: 'white', border: '1.5px solid #E0E0E0',
-        color: '#2D2D2D', fontSize: 14, fontWeight: 600,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-      }}>
-        <GoogleIcon />
-        구글로 회원가입
-      </button>
+      {isNative ? (
+        <div style={{
+          width: '100%', padding: '13px', borderRadius: 12,
+          background: 'white', border: '1.5px solid #E0E0E0',
+          color: '#999', fontSize: 14, fontWeight: 600,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+          opacity: 0.45, cursor: 'not-allowed',
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <GoogleIcon />
+            구글로 회원가입
+          </span>
+          <span style={{ fontSize: 11 }}>iOS 앱에서는 지원되지 않아요</span>
+        </div>
+      ) : (
+        <button onClick={handleGoogleRegister} style={{
+          width: '100%', padding: '13px', borderRadius: 12,
+          background: 'white', border: '1.5px solid #E0E0E0',
+          color: '#2D2D2D', fontSize: 14, fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <GoogleIcon />
+          구글로 회원가입
+        </button>
+      )}
 
       <button
         onClick={() => navigate('/login')}

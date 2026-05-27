@@ -25,6 +25,8 @@ const DOTS = [
   { left: '32%', top: '38%', s: 4, c: '#8FE3CF' },
 ]
 
+const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -171,12 +173,28 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
         </div>
 
-        <button onClick={handleGoogle} style={{
-          ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}>
-          <GoogleIcon />
-          구글로 로그인
-        </button>
+        {isNative ? (
+          <div style={{ ...outlineBtn, opacity: 0.45, cursor: 'not-allowed', flexDirection: 'column', gap: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GoogleIcon />
+              구글로 로그인
+            </span>
+            <span style={{ fontSize: 11, color: '#999' }}>iOS 앱에서는 지원되지 않아요</span>
+          </div>
+        ) : (
+          <button onClick={handleGoogle} style={{
+            ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <GoogleIcon />
+            구글로 로그인
+          </button>
+        )}
+        {isNative && (
+          <p style={{ fontSize: 12, color: '#AAA', textAlign: 'center', marginTop: 6, lineHeight: 1.6 }}>
+            구글로 가입하셨다면 해당 이메일을 입력 후<br />
+            '비밀번호를 잊으셨나요?'를 눌러 비밀번호를 설정해주세요
+          </p>
+        )}
 
         <button onClick={handleGuest} style={{ ...outlineBtn, marginTop: 10, color: '#888', borderColor: '#E0E0E0' }}>
           👤 게스트로 시작하기
