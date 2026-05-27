@@ -21,10 +21,10 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
+          keychain add-certificates
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
-          keychain add-certificates
       - name: Build IPA
         script: |
           PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -1)
