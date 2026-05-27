@@ -3,7 +3,6 @@ import { signInWithEmailAndPassword, signInAnonymously, signOut, GoogleAuthProvi
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
-import { SignInWithApple } from '@capacitor-community/apple-sign-in'
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication'
 
 const DOTS = [
@@ -28,17 +27,6 @@ const DOTS = [
 ]
 
 const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
-
-function generateNonce(len = 32) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  const arr = new Uint8Array(len)
-  crypto.getRandomValues(arr)
-  return Array.from(arr, b => chars[b % chars.length]).join('')
-}
-async function sha256hex(str) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('')
-}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -96,17 +84,10 @@ export default function LoginPage() {
 
   const handleApple = async () => {
     try {
-      const rawNonce = generateNonce()
-      const hashedNonce = await sha256hex(rawNonce)
-      const res = await SignInWithApple.authorize({
-        clientId: 'io.chaewojido.app',
-        redirectURI: '',
-        scopes: 'email name',
-        nonce: hashedNonce,
-      })
+      const result = await FirebaseAuthentication.signInWithApple()
       const credential = new OAuthProvider('apple.com').credential({
-        idToken: res.response.identityToken,
-        rawNonce,
+        idToken: result.credential?.idToken,
+        rawNonce: result.credential?.nonce,
       })
       const { user } = await signInWithCredential(auth, credential)
       const snap = await getDoc(doc(db, 'users', user.uid))
@@ -117,7 +98,7 @@ export default function LoginPage() {
       }
       navigate('/')
     } catch (err) {
-      const cancelled = ['USER_CANCELLED', 'SIGN_IN_CANCELLED'].includes(err.code) ||
+      const cancelled = err.code === 'SIGN_IN_CANCELLED' ||
         (typeof err.message === 'string' && err.message.toLowerCase().includes('cancel'))
       if (!cancelled) setError('애플 로그인에 실패했어요')
     }
