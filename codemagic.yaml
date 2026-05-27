@@ -76,7 +76,7 @@ workflows:
             exit 1
           fi
           # PROVISIONING_PROFILE을 App 타겟 pbxproj에만 주입 (전역 플래그 사용 시 SPM 패키지 타겟 오류 발생)
-          sed -i "s|CODE_SIGN_ENTITLEMENTS = App/App.entitlements;|CODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n\t\t\t\tPROVISIONING_PROFILE = \"${PROFILE_UUID}\";|g" ios/App/App.xcodeproj/project.pbxproj
+          sed -i '' "s|CODE_SIGN_ENTITLEMENTS = App/App.entitlements;|CODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n\t\t\t\tPROVISIONING_PROFILE = \"${PROFILE_UUID}\";|g" ios/App/App.xcodeproj/project.pbxproj
           mkdir -p build/ios/xcarchive
           mkdir -p build/ios/ipa
           xcodebuild archive \
