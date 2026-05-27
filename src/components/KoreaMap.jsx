@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { SVG_TO_REGION } from '../utils/regions'
+import { SVG_TO_REGION, REGION_INFO, REGION_TO_SVG } from '../utils/regions'
 
-const _cnt = {}
-Object.values(SVG_TO_REGION).forEach(id => { _cnt[id] = (_cnt[id] || 0) + 1 })
-const MERGED_IDS = new Set(Object.entries(_cnt).filter(([, c]) => c > 1).map(([id]) => id))
-
-const FILTER_ID = 'region-border-filter'
 const COLOR_VISITED = '#FF8FAB'
 const COLOR_UNVISITED = '#EAEAEA'
 const COLOR_PREVIEW = '#FF9EC0'
@@ -18,9 +13,15 @@ const visitedColor = (count) => {
   return COLOR_VISITED
 }
 
-const VB_X = 65        // left edge: clips leftmost Sinan islands
-const VB_W = 530       // width: right edge = 595 (zoomed in ~6% vs 562)
-const VB_TOP_Y = 40    // top of viewBox — pins 강원 고성군 (min y≈44) near top of map area
+// 새 SVG (800×760) 뷰포트 상수
+// 울릉도·독도는 JS에서 translate(-120, 0) 적용해 동해안 바깥에 배치
+const VB_X = 68           // 충북 옥천군이 가로 중앙 (옥천 center x=337.8, 337.8-270=67.8)
+const VB_W = 540
+const VB_TOP_Y = -20      // 강원 고성군 위 소폭 여백
+const ULLEUNG_TX = -120   // 울릉도·독도 X 오프셋 (동해안 max x=536 바깥 배치)
+
+// 방문 여부 판단: visitedRegions 배열은 구 SVG 번호("25") 또는 regionId 모두 허용
+const toRegionId = (n) => SVG_TO_REGION[String(n)] || String(n)
 
 export default function KoreaMap({ visitedRegions = [], highlightedRegion, recordCounts = {}, onRegionClick, dataLoaded = true, regionPhotos = {}, showPhotoMap = true }) {
   const containerRef = useRef(null)
@@ -34,15 +35,16 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
   const [layoutVersion, setLayoutVersion] = useState(0)
   const resetFnRef = useRef(null)
   const photoOverlayRef = useRef(null)
-  const svgCentersRef = useRef({})
+  const svgCentersRef = useRef({})   // regionId → { cx, cy } (SVG 좌표계)
   const cachedCWRef = useRef(0)
   const transformRef = useRef({ s: 1, tx: 0, ty: 0 })
 
   useEffect(() => { onClickRef.current = onRegionClick })
 
+  // ── SVG 로드 ──
   useEffect(() => {
     let cancelled = false
-    fetch('/skorea-municipalities-2011.svg')
+    fetch('/korea-map.svg')
       .then(r => r.text())
       .then(text => {
         if (cancelled) return
@@ -57,6 +59,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
     return () => { cancelled = true }
   }, [])
 
+  // ── SVG 초기화 (ready 후 1회) ──
   useEffect(() => {
     if (!ready) return
     const svg = svgRef.current
@@ -65,79 +68,63 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
 
     svg.style.cssText = 'display:block;border:0 none;outline:none;box-shadow:none;will-change:transform;transform-origin:0 0;'
     container.style.overflow = 'hidden'
-    svg.querySelector('#qgisviewbox')?.remove()
 
-    // Ulleung: translate(-130) keeps it within the tighter right edge (VB_X+VB_W=595)
-    const ulleung = svg.querySelector('#skorea-municipalities-2011_25')
-    if (ulleung) ulleung.setAttribute('transform', 'translate(-130, 0)')
+    // 레이어 그룹 ID 정리
+    const layer = svg.querySelector('#temp_combined_map')
+    if (layer) layer.removeAttribute('id')
 
-    // Dokdo: two island shapes (서도 + 동도) slightly below Ulleung
-    if (ulleung && !svg.querySelector('#dokdo-group')) {
-      const bbox = ulleung.getBBox()
-      const cx = bbox.x - 130 + bbox.width / 2 + 6
-      const cy = bbox.y + bbox.height + 12
+    // 울릉도·독도 translate (지도 오른쪽 여백 압축)
+    // 울릉도: bbox 중심 기준 1.5배 확대
+    const ULLEUNG_CX = 686.7   // 울릉도 bbox center x (원본 SVG 좌표)
+    const ULLEUNG_CY = 148.2   // 울릉도 bbox center y
+    const ulleung = svg.querySelector('#gyeongbuk_ulleung')
+    if (ulleung) ulleung.setAttribute('transform',
+      `translate(${ULLEUNG_CX + ULLEUNG_TX}, ${ULLEUNG_CY}) scale(1.5) translate(${-ULLEUNG_CX}, ${-ULLEUNG_CY})`
+    )
+    // 독도: bbox 중심 기준 2배 확대
+    const DOKDO_CX = 712.7     // 독도 bbox center x (원본 SVG 좌표)
+    const DOKDO_CY = 158.8     // 독도 bbox center y
+    const dokdoEl = svg.querySelector('#dokdo')
+    if (dokdoEl) dokdoEl.setAttribute('transform',
+      `translate(${DOKDO_CX + ULLEUNG_TX}, ${DOKDO_CY}) scale(1.2) translate(${-DOKDO_CX}, ${-DOKDO_CY})`
+    )
 
-      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-      group.id = 'dokdo-group'
-      group.setAttribute('filter', `url(#${FILTER_ID})`)
-      group.style.cursor = 'pointer'
-      group.onclick = () => onClickRef.current?.('252')
-
-      const mkPoly = (offsets) => {
-        const el = document.createElementNS('http://www.w3.org/2000/svg', 'polygon')
-        el.setAttribute('points', offsets.map(([dx, dy]) => `${cx+dx},${cy+dy}`).join(' '))
-        el.setAttribute('fill', COLOR_UNVISITED)
-        el.setAttribute('stroke', COLOR_UNVISITED)
-        el.setAttribute('stroke-width', '0.5')
-        return el
-      }
-
-      // 서도 — 불규칙한 섬 모양
-      group.appendChild(mkPoly([
-        [-3.0,-4.5], [-1.2,-3.8], [-0.2,-2.2], [-0.8,-0.8],
-        [ 0.2, 0.6], [-0.5, 2.0], [-1.8, 3.5], [-3.2, 4.2],
-        [-5.0, 3.6], [-6.4, 2.0], [-6.8, 0.2], [-6.0,-1.5],
-        [-5.8,-3.0], [-4.8,-4.2], [-3.8,-4.8],
-      ]))
-
-      svg.appendChild(group)
-    }
-
-    if (!svg.querySelector(`#${FILTER_ID}`)) {
-      let defs = svg.querySelector('defs')
-      if (!defs) {
-        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-        svg.insertBefore(defs, svg.firstChild)
-      }
-      const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter')
-      filter.setAttribute('id', FILTER_ID)
-      filter.setAttribute('x', '-15%'); filter.setAttribute('y', '-15%')
-      filter.setAttribute('width', '130%'); filter.setAttribute('height', '130%')
-      const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'feDropShadow')
-      shadow.setAttribute('dx', '0'); shadow.setAttribute('dy', '0')
-      shadow.setAttribute('stdDeviation', '1.0')
-      shadow.setAttribute('flood-color', '#888888')
-      shadow.setAttribute('flood-opacity', '1')
-      filter.appendChild(shadow)
-      defs.appendChild(filter)
-    }
-
+    // 스트로크 너비 CSS 변수
     if (!svg.querySelector('style[data-map-sw]')) {
       let defs = svg.querySelector('defs')
       if (!defs) { defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs'); svg.insertBefore(defs, svg.firstChild) }
       const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style')
       styleEl.setAttribute('data-map-sw', '1')
-      styleEl.textContent = 'path { stroke-width: var(--map-sw, 1.5); }'
+      styleEl.textContent = 'path { stroke-width: var(--map-sw, 1.2); }'
       defs.appendChild(styleEl)
     }
 
-    // viewBox: top anchored so 강원 고성군 is just below the search bar
+    // 각 지역 path: 필터·커서·클릭 이벤트 설정, 중심 좌표 계산
+    for (const regionId of Object.keys(REGION_INFO)) {
+      const el = svg.querySelector(`#${regionId}`)
+      if (!el) continue
+      el.style.cursor = 'pointer'
+      // 클릭 시 기존 Firestore 호환을 위해 SVG 번호(또는 regionId 직접) 반환
+      const clickVal = REGION_TO_SVG[regionId] || regionId
+      el.onclick = () => onClickRef.current?.(clickVal)
+
+      // 중심 좌표 계산 (사진 오버레이용)
+      try {
+        const b = el.getBBox()
+        let cx = b.x + b.width / 2
+        const cy = b.y + b.height / 2
+        // 울릉도·독도는 translate 오프셋 반영
+        if (regionId === 'gyeongbuk_ulleung' || regionId === 'dokdo') cx += ULLEUNG_TX
+        svgCentersRef.current[regionId] = { cx, cy }
+      } catch (_) {}
+    }
+
+    // ── 뷰포트/transform 관리 ──
     const vb = { x: VB_X, y: VB_TOP_Y, w: VB_W }
     let wasZoomed = false
-    let cachedShadow = null
     let cachedCW = 0
     let cachedCH = 0
-    let viewBoxCW = 0  // 마지막으로 viewBox 설정 시 사용한 너비
+    let viewBoxCW = 0
 
     const applyTransform = (skipHeavy = false) => {
       if (!cachedCW) return
@@ -145,23 +132,17 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       const tx = -(vb.x - VB_X) * cachedCW / vb.w
       const ty = -(vb.y - VB_TOP_Y) * cachedCW / vb.w
       svg.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`
-      const mapScale = cachedCW / VB_W
       transformRef.current = { s, tx, ty }
-      // 오버레이 컨테이너에 SVG와 동일 transform, 썸네일은 역스케일로 고정 크기 유지
       const overlay = photoOverlayRef.current
       if (overlay) {
         overlay.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`
         if (overlay.children.length) {
           const invS = (1 / s).toFixed(4)
-          for (const el of overlay.children) {
-            el.style.transform = `scale(${invS})`
-          }
+          for (const el of overlay.children) el.style.transform = `scale(${invS})`
         }
       }
       if (!skipHeavy) {
-        if (!cachedShadow) cachedShadow = svg.querySelector(`#${FILTER_ID} feDropShadow`)
-        if (cachedShadow) cachedShadow.setAttribute('stdDeviation', Math.max(0.35, 1.0 / s).toFixed(3))
-        svg.style.setProperty('--map-sw', (1.5 / s).toFixed(4))
+        svg.style.setProperty('--map-sw', (1.2 / s).toFixed(4))
       }
       const nowZoomed = vb.w < VB_W - 0.1
       if (nowZoomed !== wasZoomed) { wasZoomed = nowZoomed; setIsZoomed(nowZoomed) }
@@ -177,7 +158,6 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       svg.setAttribute('height', cachedCH)
       svg.style.width = cachedCW + 'px'
       svg.style.height = cachedCH + 'px'
-      // 너비가 바뀔 때만 viewBox 재계산 — 높이만 변하는 경우(iOS 주소창 등) 제외
       if (cachedCW !== viewBoxCW) {
         viewBoxCW = cachedCW
         setLayoutVersion(v => v + 1)
@@ -189,9 +169,8 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
 
     let resizeDebounce = null
     const ro = new ResizeObserver(() => {
-      if (!cachedCW || !cachedCH) {
-        applyLayout()
-      } else {
+      if (!cachedCW || !cachedCH) { applyLayout() }
+      else {
         clearTimeout(resizeDebounce)
         resizeDebounce = setTimeout(applyLayout, 120)
       }
@@ -200,52 +179,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
     applyLayout()
     resetFnRef.current = () => { vb.x = VB_X; vb.y = VB_TOP_Y; vb.w = VB_W; applyTransform() }
 
-    const regionMap = {}
-    for (let i = 1; i <= 251; i++) {
-      const g = svg.querySelector(`#skorea-municipalities-2011_${i}`)
-      if (!g) continue
-      const id = SVG_TO_REGION[String(i)]
-      if (!id) continue
-      if (!regionMap[id]) regionMap[id] = []
-      regionMap[id].push(g)
-    }
-
-    for (const [id, groups] of Object.entries(regionMap)) {
-      if (groups.length <= 1) continue
-      if (svg.querySelector(`[data-region="${id}"]`)) continue
-      const wrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-      wrapper.setAttribute('data-region', id)
-      wrapper.setAttribute('filter', `url(#${FILTER_ID})`)
-      groups[0].parentNode.insertBefore(wrapper, groups[0])
-      groups.forEach(g => wrapper.appendChild(g))
-    }
-
-    for (let i = 1; i <= 251; i++) {
-      const g = svg.querySelector(`#skorea-municipalities-2011_${i}`)
-      if (!g) continue
-      const regionId = SVG_TO_REGION[String(i)]
-      if (!(regionId && MERGED_IDS.has(regionId))) {
-        g.setAttribute('filter', `url(#${FILTER_ID})`)
-      }
-      g.style.cursor = 'pointer'
-      g.onclick = () => onClickRef.current?.(String(i))
-    }
-
-    // 각 지역 SVG 중심 좌표 계산 (사진 오버레이용)
-    const seenRegions = new Set()
-    for (let i = 1; i <= 251; i++) {
-      const g = svg.querySelector(`#skorea-municipalities-2011_${i}`)
-      if (!g) continue
-      const regionId = SVG_TO_REGION[String(i)]
-      if (!regionId || seenRegions.has(regionId)) continue
-      seenRegions.add(regionId)
-      const el = svg.querySelector(`[data-region="${regionId}"]`) || g
-      try {
-        const b = el.getBBox()
-        svgCentersRef.current[regionId] = { cx: b.x + b.width / 2, cy: b.y + b.height / 2 }
-      } catch (_) {}
-    }
-
+    // ── 터치 줌/팬 ──
     const MIN_W = VB_W / 4
     const MAX_W = VB_W
     let touchData = null
@@ -285,7 +219,6 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       const cw = cachedCW
       const ch = cachedCH
       if (!cw || !ch) return
-
       if (touchData.type === 'pan' && e.touches.length === 1) {
         const dx = e.touches[0].clientX - touchData.startX
         const dy = e.touches[0].clientY - touchData.startY
@@ -315,7 +248,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
         const newW = Math.max(MIN_W, Math.min(MAX_W, touchData.startVBW * touchData.startDist / newDist))
         const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2
         const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2
-        const startVBH = ch * touchData.startVBW / cw
+        const startVBH = cachedCH * touchData.startVBW / cw
         const midVBX = touchData.startVBX + (midX / cw) * touchData.startVBW
         const midVBY = touchData.startVBY + (midY / ch) * startVBH
         const newVBH = ch * newW / cw
@@ -358,11 +291,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
     }
 
     const onClickCapture = (e) => {
-      if (hasDragged) {
-        e.stopPropagation()
-        e.preventDefault()
-        hasDragged = false
-      }
+      if (hasDragged) { e.stopPropagation(); e.preventDefault(); hasDragged = false }
     }
 
     container.addEventListener('touchstart', onTouchStart, { passive: true })
@@ -381,48 +310,40 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
     }
   }, [ready])
 
-  // 사진 오버레이 렌더링
+  // ── 사진 오버레이 ──
   useEffect(() => {
     if (!ready || !layoutReady || !photoOverlayRef.current) return
     const overlay = photoOverlayRef.current
     overlay.innerHTML = ''
-
     const mapScale = cachedCWRef.current / VB_W
     const { s: curS, tx, ty } = transformRef.current
 
     for (const [regionId, photoURL] of Object.entries(regionPhotos)) {
       const center = svgCentersRef.current[regionId]
       if (!center || !mapScale) continue
-
       const pxX = Math.round((center.cx - VB_X) * mapScale)
       const pxY = Math.round((center.cy - VB_TOP_Y) * mapScale)
       const count = recordCounts[regionId] || 0
 
       const wrap = document.createElement('div')
       wrap.style.cssText = `position:absolute;left:${pxX - 28}px;top:${pxY - 66}px;width:56px;height:66px;pointer-events:none;transform:scale(${(1 / curS).toFixed(4)});transform-origin:50% 100%;`
-
       const frame = document.createElement('div')
       frame.style.cssText = `width:56px;height:56px;background:white;padding:2px;border-radius:7px;overflow:hidden;box-sizing:border-box;box-shadow:0 3px 10px rgba(0,0,0,0.22),0 1px 3px rgba(0,0,0,0.12);`
-
       const img = document.createElement('img')
       img.src = photoURL
       img.style.cssText = `width:100%;height:100%;object-fit:cover;display:block;border-radius:5px;`
       img.onerror = () => { wrap.style.display = 'none' }
-
       const tri = document.createElement('div')
       tri.style.cssText = `width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid white;margin-left:20px;`
-
       frame.appendChild(img)
       wrap.appendChild(frame)
       wrap.appendChild(tri)
-
       if (count > 1) {
         const badge = document.createElement('div')
         badge.style.cssText = `position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:#FF8FAB;color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;box-shadow:0 1px 4px rgba(0,0,0,0.2);`
         badge.textContent = count > 99 ? '99+' : String(count)
         wrap.appendChild(badge)
       }
-
       overlay.appendChild(wrap)
     }
 
@@ -430,60 +351,39 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
     overlay.style.transform = `translate(${tx}px,${ty}px) scale(${curS})`
   }, [ready, layoutReady, layoutVersion, regionPhotos, recordCounts])
 
+  // ── 방문 지역 색칠 ──
   useEffect(() => {
     if (!ready) return
     const svg = svgRef.current
     if (!svg) return
 
-    const visitedIds = new Set()
-    visitedRegions.forEach(n => {
-      const id = SVG_TO_REGION[n]
-      if (id) visitedIds.add(id)
-    })
+    // visitedRegions: 구 SVG 번호 또는 regionId 모두 허용
+    const visitedIds = new Set(visitedRegions.map(toRegionId))
+    const highlightedId = highlightedRegion ? toRegionId(highlightedRegion) : null
 
-    const highlightedId = highlightedRegion ? SVG_TO_REGION[highlightedRegion] : null
-
-    for (let i = 1; i <= 251; i++) {
-      const g = svg.querySelector(`#skorea-municipalities-2011_${i}`)
-      if (!g) continue
-      const regionId = SVG_TO_REGION[String(i)]
-      const isVisited = regionId ? visitedIds.has(regionId) : visitedRegions.includes(String(i))
-      const isHighlighted = !!(highlightedId && regionId === highlightedId)
+    for (const regionId of Object.keys(REGION_INFO)) {
+      const el = svg.querySelector(`#${regionId}`)
+      if (!el) continue
+      const isVisited = visitedIds.has(regionId)
+      const isHighlighted = highlightedId === regionId
       const fill = isHighlighted
         ? (isVisited ? COLOR_HIGHLIGHT_VISITED : COLOR_PREVIEW)
         : isVisited ? visitedColor(recordCounts[regionId] || 0) : COLOR_UNVISITED
-      g.querySelectorAll('path').forEach(path => {
-        path.setAttribute('fill', fill)
-        path.setAttribute('stroke', fill)
-        path.setAttribute('stroke-width', '1.5')
-        path.setAttribute('stroke-linejoin', 'round')
-        path.setAttribute('stroke-linecap', 'round')
-        path.setAttribute('vector-effect', 'non-scaling-stroke')
-      })
-      g.style.filter = isHighlighted
-        ? (isVisited ? 'drop-shadow(0 0 5px rgba(255,188,0,0.9))' : 'drop-shadow(0 0 4px rgba(255,123,169,0.75))')
+      el.setAttribute('fill', fill)
+      el.setAttribute('stroke', '#6B6B6B')
+      el.setAttribute('stroke-linejoin', 'round')
+      el.setAttribute('stroke-linecap', 'round')
+      el.setAttribute('vector-effect', 'non-scaling-stroke')
+      el.style.filter = isHighlighted
+        ? (isVisited ? 'drop-shadow(0 0 2px rgba(255,188,0,0.5))' : 'drop-shadow(0 0 2px rgba(255,123,169,0.4))')
         : ''
-    }
-
-    // Color Dokdo islands
-    const dokdoGroup = svg.querySelector('#dokdo-group')
-    if (dokdoGroup) {
-      const isDockedVisited = visitedIds.has('dokdo')
-      const isDockedHighlighted = highlightedId === 'dokdo'
-      const dokdoFill = isDockedHighlighted
-        ? (isDockedVisited ? COLOR_HIGHLIGHT_VISITED : COLOR_PREVIEW)
-        : isDockedVisited ? visitedColor(recordCounts['dokdo'] || 0) : COLOR_UNVISITED
-      dokdoGroup.querySelectorAll('polygon').forEach(p => {
-        p.setAttribute('fill', dokdoFill)
-        p.setAttribute('stroke', dokdoFill)
-        p.setAttribute('vector-effect', 'non-scaling-stroke')
-      })
     }
 
     // 새로 색칠된 지역 "퐁!" 애니메이션
     const prevVisited = prevVisitedRef.current
     const newlyAdded = visitedRegions.filter(n => !prevVisited.includes(String(n)))
     prevVisitedRef.current = visitedRegions.map(String)
+
     const SPARKLE_DATA = [
       { dx:  0, dy: -13, char: '★', color: '#FFD85C' },
       { dx: 11, dy:  -7, char: '✦', color: '#FF7BA9' },
@@ -492,18 +392,21 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       { dx:-11, dy:   7, char: '★', color: '#FF7BA9' },
       { dx:-11, dy:  -7, char: '✦', color: '#8FE3CF' },
     ]
-    newlyAdded.forEach(svgNum => {
-      const g = svg.querySelector(`#skorea-municipalities-2011_${svgNum}`)
-      if (!g) return
-      g.style.transformBox = 'fill-box'
-      g.style.transformOrigin = 'center'
-      g.style.animation = 'regionPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)'
-      setTimeout(() => { g.style.animation = '' }, 700)
+
+    newlyAdded.forEach(n => {
+      const regionId = toRegionId(n)
+      const el = svg.querySelector(`#${regionId}`)
+      if (!el) return
+      el.style.transformBox = 'fill-box'
+      el.style.transformOrigin = 'center'
+      el.style.animation = 'regionPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)'
+      setTimeout(() => { el.style.animation = '' }, 700)
 
       try {
-        const bbox = g.getBBox()
-        const cx = bbox.x + bbox.width / 2
+        const bbox = el.getBBox()
+        let cx = bbox.x + bbox.width / 2
         const cy = bbox.y + bbox.height / 2
+        if (regionId === 'gyeongbuk_ulleung' || regionId === 'dokdo') cx += ULLEUNG_TX
         SPARKLE_DATA.forEach(({ dx, dy, char, color }, si) => {
           const t = document.createElementNS('http://www.w3.org/2000/svg', 'text')
           t.textContent = char

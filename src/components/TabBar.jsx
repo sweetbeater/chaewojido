@@ -48,7 +48,7 @@ export default function TabBar({ hasTeam }) {
             }}
           >
             {tab.customSrc
-              ? <img src={tab.customSrc} width={24} height={24} alt="" draggable={false} style={{ objectFit: 'contain', opacity: active ? 1 : 0.35 }} />
+              ? <img src={tab.customSrc} width={27} height={27} alt="" draggable={false} style={{ objectFit: 'contain', opacity: active ? 1 : 0.35 }} />
               : <TwemojiImg code={tab.twemoji} size={24} style={{ opacity: active ? 1 : 0.35 }} />
             }
             <span style={{

@@ -1,4 +1,4 @@
-// SVG 그룹 번호 → 통합 지역 ID 매핑
+// SVG 그룹 번호 → 통합 지역 ID 매핑 (기존 데이터 호환용)
 export const SVG_TO_REGION = {
   // 서울특별시 (227~251)
   "227":"seoul","228":"seoul","229":"seoul","230":"seoul","231":"seoul",
@@ -194,6 +194,12 @@ export const SVG_TO_REGION = {
 }
 
 export const TOTAL_REGIONS = new Set(Object.values(SVG_TO_REGION)).size
+
+// 지역 ID → 대표 SVG 번호 (기존 Firestore 데이터 호환용 역방향 매핑)
+export const REGION_TO_SVG = {}
+for (const [svgNum, regionId] of Object.entries(SVG_TO_REGION)) {
+  if (!REGION_TO_SVG[regionId]) REGION_TO_SVG[regionId] = svgNum
+}
 
 export const getCompletionRate = (visitedRegions) => {
   if (!visitedRegions || visitedRegions.length === 0) return '0.0'

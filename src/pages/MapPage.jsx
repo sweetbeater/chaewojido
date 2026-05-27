@@ -298,7 +298,7 @@ export default function MapPage({ user, onOpenRecord }) {
                 bottom: 18,
                 left: `clamp(14px, ${completionRate}%, calc(100% - 14px))`,
                 transform: 'translateX(-50%)',
-                width: 28, height: 28,
+                width: 31, height: 31,
                 objectFit: 'contain',
                 transition: 'left 0.6s ease',
                 pointerEvents: 'none',
@@ -340,7 +340,7 @@ export default function MapPage({ user, onOpenRecord }) {
             background: 'rgba(255,255,255,0.82)', border: 'none',
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            <img src="/도트돋보기삐야.png" alt="" style={{ width: 38, height: 25, flexShrink: 0, objectFit: 'contain' }} />
+            <img src="/도트돋보기삐야.png" alt="" style={{ width: 49, height: 33, flexShrink: 0, objectFit: 'contain' }} />
             <span style={{ fontSize: 13, color: '#555', fontWeight: 500 }}>지역 검색(예: 서울, 부산...)</span>
           </button>
         )}
