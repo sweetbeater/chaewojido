@@ -20,37 +20,70 @@ workflows:
         script: npx cap sync ios
       - name: Set up code signing
         script: |
+          set -e
           keychain initialize
+          # 환경변수 확인
+          if [ -z "$CM_CERTIFICATE" ]; then
+            echo "ERROR: CM_CERTIFICATE not set"
+            exit 1
+          fi
           echo "CM_CERTIFICATE length: ${#CM_CERTIFICATE}"
+          # Codemagic 키체인 경로 가져오기
+          KEYCHAIN_PATH=$(security default-keychain | tr -d '"' | xargs)
+          echo "Keychain: $KEYCHAIN_PATH"
+          # 인증서 임포트
           echo "$CM_CERTIFICATE" | base64 --decode > /tmp/distribution.p12
           security import /tmp/distribution.p12 \
             -P "$CM_CERTIFICATE_PASSWORD" \
+            -k "$KEYCHAIN_PATH" \
             -T /usr/bin/codesign \
             -T /usr/bin/xcodebuild
+          # 코드사인 접근 허용
           security set-key-partition-list \
             -S apple-tool:,apple:,codesign: \
-            -s -k "" 2>/dev/null || true
+            -s -k "" "$KEYCHAIN_PATH" 2>/dev/null || true
+          # 인증서 설치 확인
+          security find-identity -v -p codesigning
+          # 프로비저닝 프로파일 가져오기
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
       - name: Build IPA
         script: |
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -1)
+          set -e
+          # 프로비저닝 프로파일 확인
+          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" 2>/dev/null | head -1)
+          if [ -z "$PROFILE_PATH" ]; then
+            echo "ERROR: No provisioning profile found"
+            exit 1
+          fi
+          echo "Profile: $PROFILE_PATH"
+          # 프로파일 정보 추출
           security cms -D -i "$PROFILE_PATH" -o /tmp/profile.plist
           PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /tmp/profile.plist)
           TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print TeamIdentifier:0" /tmp/profile.plist)
           CERT_NAME=$(security find-identity -v -p codesigning | grep -E "Apple Distribution|iPhone Distribution" | head -1 | sed 's/.*"\(.*\)".*/\1/')
           echo "UUID=$PROFILE_UUID | Team=$TEAM_ID | Cert=$CERT_NAME"
+          if [ -z "$CERT_NAME" ]; then
+            echo "ERROR: No signing certificate found in keychain"
+            exit 1
+          fi
+          # 빌드 디렉토리 생성
+          mkdir -p build/ios/xcarchive
+          mkdir -p build/ios/ipa
+          # 아카이브
           xcodebuild archive \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
+            -destination "generic/platform=iOS" \
             -archivePath build/ios/xcarchive/App.xcarchive \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="$CERT_NAME" \
             PROVISIONING_PROFILE="$PROFILE_UUID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             COMPILER_INDEX_STORE_ENABLE=NO
+          # ExportOptions.plist 생성
           cat > /tmp/ExportOptions.plist << PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -70,6 +103,7 @@ workflows:
           </dict>
           </plist>
           PLIST
+          # IPA 내보내기
           xcodebuild -exportArchive \
             -archivePath build/ios/xcarchive/App.xcarchive \
             -exportOptionsPlist /tmp/ExportOptions.plist \
