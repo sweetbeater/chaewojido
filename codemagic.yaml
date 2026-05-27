@@ -22,6 +22,20 @@ workflows:
         script: |
           cd ios/App
           agvtool new-version -all $BUILD_NUMBER
+      - name: Set up Google Sign-In URL scheme
+        script: |
+          GOOGLE_PLIST="ios/App/App/GoogleService-Info.plist"
+          INFO_PLIST="ios/App/App/Info.plist"
+          if [ -f "$GOOGLE_PLIST" ]; then
+            REVERSED_CLIENT_ID=$(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" "$GOOGLE_PLIST" 2>/dev/null || echo "")
+            if [ -n "$REVERSED_CLIENT_ID" ]; then
+              /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$INFO_PLIST" 2>/dev/null || true
+              /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$INFO_PLIST" 2>/dev/null || true
+              /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$INFO_PLIST" 2>/dev/null || true
+              /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $REVERSED_CLIENT_ID" "$INFO_PLIST" 2>/dev/null || true
+              echo "Google Sign-In URL scheme added: $REVERSED_CLIENT_ID"
+            fi
+          fi
       - name: Set up code signing
         script: |
           set -e

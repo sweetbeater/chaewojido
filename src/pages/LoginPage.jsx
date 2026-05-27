@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { SignInWithApple } from '@capacitor-community/apple-sign-in'
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication'
 
 const DOTS = [
   { left: '6%',  top: '7%',  s: 8, c: '#FFD85C' },
@@ -58,17 +59,29 @@ export default function LoginPage() {
 
   const handleGoogle = async () => {
     try {
-      const result = await signInWithPopup(auth, new GoogleAuthProvider())
-      const snap = await getDoc(doc(db, 'users', result.user.uid))
+      let uid
+      if (isNative) {
+        // 네이티브 iOS: @capacitor-firebase/authentication 사용
+        const result = await FirebaseAuthentication.signInWithGoogle()
+        const credential = GoogleAuthProvider.credential(
+          result.credential?.idToken,
+          result.credential?.accessToken,
+        )
+        const { user } = await signInWithCredential(auth, credential)
+        uid = user.uid
+      } else {
+        const result = await signInWithPopup(auth, new GoogleAuthProvider())
+        uid = result.user.uid
+      }
+      const snap = await getDoc(doc(db, 'users', uid))
       if (!snap.exists()) {
         await signOut(auth)
         setError('가입된 계정이 없어요. 먼저 회원가입을 해주세요.')
         return
       }
-      // nickname 없으면 App.jsx의 CompleteProfileScreen이 처리
       navigate('/')
-    } catch {
-      setError('구글 로그인에 실패했어요')
+    } catch (err) {
+      if (err.code !== 'SIGN_IN_CANCELLED') setError('구글 로그인에 실패했어요')
     }
   }
 
@@ -214,28 +227,12 @@ export default function LoginPage() {
           <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
         </div>
 
-        {isNative ? (
-          <div style={{ ...outlineBtn, opacity: 0.45, cursor: 'not-allowed', flexDirection: 'column', gap: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <GoogleIcon />
-              구글로 로그인
-            </span>
-            <span style={{ fontSize: 11, color: '#999' }}>iOS 앱에서는 지원되지 않아요</span>
-          </div>
-        ) : (
-          <button onClick={handleGoogle} style={{
-            ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}>
-            <GoogleIcon />
-            구글로 로그인
-          </button>
-        )}
-        {isNative && (
-          <p style={{ fontSize: 12, color: '#AAA', textAlign: 'center', marginTop: 6, lineHeight: 1.6 }}>
-            구글로 가입하셨다면 해당 이메일을 입력 후<br />
-            '비밀번호를 잊으셨나요?'를 눌러 비밀번호를 설정해주세요
-          </p>
-        )}
+        <button onClick={handleGoogle} style={{
+          ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        }}>
+          <GoogleIcon />
+          구글로 로그인
+        </button>
 
         {isNative && (
           <button onClick={handleApple} style={{ ...outlineBtn, marginTop: 10, background: '#000', color: '#fff', borderColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { createUserWithEmailAndPassword, EmailAuthProvider, linkWithCredential, linkWithPopup, GoogleAuthProvider, signInWithPopup, signOut, OAuthProvider, signInWithCredential } from 'firebase/auth'
+import { createUserWithEmailAndPassword, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithPopup, signOut, OAuthProvider, signInWithCredential } from 'firebase/auth'
 import { doc, setDoc, getDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { SignInWithApple } from '@capacitor-community/apple-sign-in'
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication'
 
 function getGuestRegions() {
   try { return JSON.parse(localStorage.getItem('guestVisitedRegions') || '[]') } catch { return [] }
@@ -126,23 +127,43 @@ export default function RegisterPage() {
   const handleGoogleRegister = async () => {
     try {
       const currentUser = auth.currentUser
-      if (currentUser?.isAnonymous) {
-        await linkWithPopup(currentUser, new GoogleAuthProvider())
-        // 신규 구글 유저 — App.jsx의 needsProfile 체크가 닉네임 입력 화면을 띄워줌
-      } else {
-        const result = await signInWithPopup(auth, new GoogleAuthProvider())
-        const snap = await getDoc(doc(db, 'users', result.user.uid))
-        if (snap.exists() && snap.data().nickname) {
-          await signOut(auth)
-          setError('이미 가입된 구글 계정이에요. 로그인해주세요.')
-          return
+      if (isNative) {
+        // 네이티브 iOS: @capacitor-firebase/authentication 사용
+        const result = await FirebaseAuthentication.signInWithGoogle()
+        const credential = GoogleAuthProvider.credential(
+          result.credential?.idToken,
+          result.credential?.accessToken,
+        )
+        if (currentUser?.isAnonymous) {
+          await linkWithCredential(currentUser, credential)
+        } else {
+          const { user } = await signInWithCredential(auth, credential)
+          const snap = await getDoc(doc(db, 'users', user.uid))
+          if (snap.exists() && snap.data().nickname) {
+            await signOut(auth)
+            setError('이미 가입된 구글 계정이에요. 로그인해주세요.')
+            return
+          }
         }
-        // 신규 구글 유저 — App.jsx의 needsProfile 체크가 닉네임 입력 화면을 띄워줌
+      } else {
+        if (currentUser?.isAnonymous) {
+          const { linkWithPopup } = await import('firebase/auth')
+          await linkWithPopup(currentUser, new GoogleAuthProvider())
+        } else {
+          const result = await signInWithPopup(auth, new GoogleAuthProvider())
+          const snap = await getDoc(doc(db, 'users', result.user.uid))
+          if (snap.exists() && snap.data().nickname) {
+            await signOut(auth)
+            setError('이미 가입된 구글 계정이에요. 로그인해주세요.')
+            return
+          }
+        }
       }
+      navigate('/')
     } catch (err) {
       if (err.code === 'auth/credential-already-in-use') {
         setError('이미 가입된 구글 계정이에요. 로그인해주세요.')
-      } else {
+      } else if (err.code !== 'SIGN_IN_CANCELLED') {
         setError('구글 회원가입에 실패했어요')
       }
     }
@@ -206,31 +227,15 @@ export default function RegisterPage() {
         <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
       </div>
 
-      {isNative ? (
-        <div style={{
-          width: '100%', padding: '13px', borderRadius: 12,
-          background: 'white', border: '1.5px solid #E0E0E0',
-          color: '#999', fontSize: 14, fontWeight: 600,
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-          opacity: 0.45, cursor: 'not-allowed',
-        }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <GoogleIcon />
-            구글로 회원가입
-          </span>
-          <span style={{ fontSize: 11 }}>iOS 앱에서는 지원되지 않아요</span>
-        </div>
-      ) : (
-        <button onClick={handleGoogleRegister} style={{
-          width: '100%', padding: '13px', borderRadius: 12,
-          background: 'white', border: '1.5px solid #E0E0E0',
-          color: '#2D2D2D', fontSize: 14, fontWeight: 600,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}>
-          <GoogleIcon />
-          구글로 회원가입
-        </button>
-      )}
+      <button onClick={handleGoogleRegister} style={{
+        width: '100%', padding: '13px', borderRadius: 12,
+        background: 'white', border: '1.5px solid #E0E0E0',
+        color: '#2D2D2D', fontSize: 14, fontWeight: 600,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+      }}>
+        <GoogleIcon />
+        구글로 회원가입
+      </button>
 
       {isNative && (
         <button onClick={handleAppleRegister} style={{

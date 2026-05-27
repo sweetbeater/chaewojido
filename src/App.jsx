@@ -144,7 +144,23 @@ export default function App() {
   }, [user])
 
   useEffect(() => {
-    if (!user || !messaging) return
+    if (!user) return
+    const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
+    if (isNative) {
+      // 네이티브: @capacitor-firebase/messaging 포그라운드 리스너
+      const listenerPromise = import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) =>
+        FirebaseMessaging.addListener('notificationReceived', (event) => {
+          setNotification({
+            title: event.notification.title,
+            body: event.notification.body,
+          })
+          setTimeout(() => setNotification(null), 4000)
+        })
+      )
+      return () => { listenerPromise.then(l => l.remove()) }
+    }
+    // 웹: Firebase Web Messaging
+    if (!messaging) return
     const unsub = onMessage(messaging, (payload) => {
       setNotification({
         title: payload.notification?.title,
