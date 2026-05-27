@@ -18,9 +18,9 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
       setProfile({})
       return
     }
-    getDoc(doc(db, 'users', user.uid)).then(snap => {
-      setProfile(snap.exists() ? snap.data() : {})
-    })
+    getDoc(doc(db, 'users', user.uid))
+      .then(snap => setProfile(snap.exists() ? snap.data() : {}))
+      .catch(() => setProfile({}))
   }, [user])
 
   useEffect(() => {
@@ -34,18 +34,15 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
 
     const q = query(coll, where('regionNum', '==', regionNum), orderBy('createdAt', 'desc'))
 
-    const unsub = onSnapshot(q, { includeMetadataChanges: true }, snap => {
+    const unsub = onSnapshot(q, snap => {
       setRecords(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-      if (!snap.metadata.fromCache && !snap.metadata.hasPendingWrites) setLoading(false)
+      setLoading(false)
     }, err => {
       console.error(err)
       setLoading(false)
     })
 
-    // 오프라인 등 서버 응답이 없을 경우 10초 후 강제 해제
-    const timeout = setTimeout(() => setLoading(false), 10000)
-
-    return () => { unsub(); clearTimeout(timeout) }
+    return () => unsub()
   }, [user, regionNum, profile])
 
   const handleSelectRecord = (record) => {
