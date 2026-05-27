@@ -16,7 +16,7 @@ export default function TabBar({ hasTeam }) {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)',
+      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)',
       left: 'max(14px, calc(50vw - 201px))',
       right: 'max(14px, calc(50vw - 201px))',
       background: 'rgba(255,255,255,0.92)',

@@ -17,7 +17,7 @@ const visitedColor = (count) => {
 // 울릉도·독도는 JS에서 translate(-120, 0) 적용해 동해안 바깥에 배치
 const VB_X = 68           // 충북 옥천군이 가로 중앙 (옥천 center x=337.8, 337.8-270=67.8)
 const VB_W = 540
-const VB_TOP_Y = -20      // 강원 고성군 위 소폭 여백
+const VB_TOP_Y = -8       // 강원 고성군 위 소폭 여백
 const ULLEUNG_TX = -120   // 울릉도·독도 X 오프셋 (동해안 max x=536 바깥 배치)
 
 // 방문 여부 판단: visitedRegions 배열은 구 SVG 번호("25") 또는 regionId 모두 허용
