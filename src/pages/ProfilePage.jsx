@@ -14,8 +14,12 @@ export default function ProfilePage({ user }) {
   const [notifWorking, setNotifWorking] = useState(false)
   const navigate = useNavigate()
 
-  const notifPermission = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported'
+  const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
   const hasFcmToken = !!profile?.fcmToken
+  // 네이티브(WKWebView)에서는 Notification API 없음 → fcmToken 등록 여부로 상태 판단
+  const notifPermission = isNativeApp
+    ? (hasFcmToken ? 'granted' : 'default')
+    : (typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
 
   useEffect(() => {
     if (!user) return
