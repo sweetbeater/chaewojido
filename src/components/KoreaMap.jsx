@@ -397,10 +397,14 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       const regionId = toRegionId(n)
       const el = svg.querySelector(`#${regionId}`)
       if (!el) return
-      el.style.transformBox = 'fill-box'
-      el.style.transformOrigin = 'center'
-      el.style.animation = 'regionPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)'
-      setTimeout(() => { el.style.animation = '' }, 700)
+      // 울릉도·독도는 SVG transform attribute로 위치를 잡기 때문에
+      // CSS animation 적용 시 WebKit에서 transform이 충돌해 내륙으로 이동하는 버그 발생
+      if (regionId !== 'gyeongbuk_ulleung' && regionId !== 'dokdo') {
+        el.style.transformBox = 'fill-box'
+        el.style.transformOrigin = 'center'
+        el.style.animation = 'regionPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)'
+        setTimeout(() => { el.style.animation = ''; el.style.transformBox = ''; el.style.transformOrigin = '' }, 700)
+      }
 
       try {
         const bbox = el.getBBox()

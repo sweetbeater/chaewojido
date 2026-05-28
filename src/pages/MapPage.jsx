@@ -199,7 +199,7 @@ export default function MapPage({ user, onOpenRecord }) {
         ))
         teamSnap.docs.forEach(d => teamRecordDocs.push(d))
       }
-      const totalRecords = personalSnap.size + teamRecordDocs.length
+      const totalRecords = personalSnap.size
 
       if (totalRecords > 0) {
         const ok = await confirm(
