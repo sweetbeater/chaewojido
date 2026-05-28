@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, arrayRemove } from 'firebase/firestore'
-import { updatePassword, deleteUser, reauthenticateWithCredential, reauthenticateWithPopup, EmailAuthProvider, GoogleAuthProvider } from 'firebase/auth'
+import { updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from '../firebase'
 import { useNavigate } from 'react-router-dom'
@@ -17,7 +17,10 @@ export default function EditProfilePage({ user }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const navigate = useNavigate()
+
   const isGoogleUser = user?.providerData?.some(p => p.providerId === 'google.com')
+  const isAppleUser = user?.providerData?.some(p => p.providerId === 'apple.com')
+  const isOAuthUser = isGoogleUser || isAppleUser
 
   useEffect(() => {
     if (!user) return
@@ -44,7 +47,6 @@ export default function EditProfilePage({ user }) {
     try {
       let photoURL = profile?.photoURL || null
 
-      // 사진 업로드
       if (photo) {
         const storageRef = ref(storage, `profiles/${user.uid}`)
         await uploadBytes(storageRef, photo)
@@ -52,15 +54,11 @@ export default function EditProfilePage({ user }) {
       }
 
       const updates = { photoURL }
-
-      if (nickname !== profile?.nickname) {
-        updates.nickname = nickname
-      }
-
+      if (nickname !== profile?.nickname) updates.nickname = nickname
       await updateDoc(doc(db, 'users', user.uid), updates)
 
       // 비밀번호 변경 (이메일 유저만)
-      if (!isGoogleUser && newPassword) {
+      if (!isOAuthUser && newPassword) {
         if (!currentPassword) {
           setMessage('현재 비밀번호를 입력해주세요')
           setLoading(false)
@@ -87,9 +85,8 @@ export default function EditProfilePage({ user }) {
 
   const handleDelete = async () => {
     try {
-      if (isGoogleUser) {
-        await reauthenticateWithPopup(user, new GoogleAuthProvider())
-      } else {
+      // 이메일 유저: 비밀번호 재확인
+      if (!isOAuthUser) {
         if (!deletePassword) return setMessage('비밀번호를 입력해주세요')
         const credential = EmailAuthProvider.credential(user.email, deletePassword)
         await reauthenticateWithCredential(user, credential)
@@ -105,7 +102,6 @@ export default function EditProfilePage({ user }) {
         if (teamSnap.exists()) {
           const members = teamSnap.data().members || []
           if (members.length <= 2) {
-            // 2명 팀 → 팀 해체: 팀 기록 전체 삭제 + 팀 문서 삭제 + 남은 멤버 초기화
             const teamRecords = await getDocs(collection(db, 'teams', profile.teamId, 'records'))
             for (const d of teamRecords.docs) await deleteDoc(d.ref)
             await deleteDoc(doc(db, 'teams', profile.teamId))
@@ -115,7 +111,6 @@ export default function EditProfilePage({ user }) {
               }
             }
           } else {
-            // 3명+ → 탈퇴자만 멤버에서 제거, 팀 기록은 유지
             await updateDoc(doc(db, 'teams', profile.teamId), { members: arrayRemove(user.uid) })
           }
         }
@@ -127,11 +122,12 @@ export default function EditProfilePage({ user }) {
       await deleteUser(user)
       navigate('/login')
     } catch (err) {
-      if (err.code === 'auth/wrong-password') {
+      if (err.code === 'auth/requires-recent-login') {
+        setMessage('보안을 위해 앱을 재시작 후 다시 시도해주세요')
+      } else if (err.code === 'auth/wrong-password') {
         setMessage('비밀번호가 틀렸어요')
-      } else if (err.code === 'auth/popup-closed-by-user') {
-        setMessage('구글 인증이 취소됐어요')
       } else {
+        console.error(err)
         setMessage('탈퇴에 실패했어요')
       }
     }
@@ -171,8 +167,8 @@ export default function EditProfilePage({ user }) {
         />
       </div>
 
-      {/* 비밀번호 변경 — 이메일 유저만 표시 */}
-      {!isGoogleUser && (
+      {/* 비밀번호 변경 — 이메일 유저만 */}
+      {!isOAuthUser && (
         <div style={{ marginBottom: 24 }}>
           <p style={{ fontSize: 13, color: '#aaa', marginBottom: 6 }}>비밀번호 변경</p>
           <input
@@ -228,11 +224,7 @@ export default function EditProfilePage({ user }) {
           <p style={{ fontSize: 13, color: '#aaa', marginBottom: 12, lineHeight: 1.6 }}>
             탈퇴하면 모든 데이터가 삭제되고 복구할 수 없어요.
           </p>
-          {isGoogleUser ? (
-            <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>
-              구글 계정으로 본인 확인 후 탈퇴됩니다.
-            </p>
-          ) : (
+          {!isOAuthUser && (
             <input
               type="password"
               placeholder="비밀번호 확인"
