@@ -12,13 +12,24 @@ export default function ProfilePage({ user }) {
   const [teamData, setTeamData] = useState(null)
   const [records, setRecords] = useState([])
   const [notifWorking, setNotifWorking] = useState(false)
+  const [nativePermDenied, setNativePermDenied] = useState(false)
   const navigate = useNavigate()
 
   const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
   const hasFcmToken = !!profile?.fcmToken
-  // 네이티브(WKWebView)에서는 Notification API 없음 → fcmToken 등록 여부로 상태 판단
+
+  useEffect(() => {
+    if (!isNativeApp) return
+    import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {
+      FirebaseMessaging.checkPermissions().then(({ receive }) => {
+        setNativePermDenied(receive === 'denied')
+      }).catch(() => {})
+    })
+  }, [isNativeApp])
+
+  // 네이티브(WKWebView)에서는 Notification API 없음 → checkPermissions + fcmToken으로 상태 판단
   const notifPermission = isNativeApp
-    ? (hasFcmToken ? 'granted' : 'default')
+    ? (nativePermDenied ? 'denied' : hasFcmToken ? 'granted' : 'default')
     : (typeof Notification !== 'undefined' ? Notification.permission : 'unsupported')
 
   useEffect(() => {
@@ -140,7 +151,8 @@ export default function ProfilePage({ user }) {
                   disabled={notifWorking}
                   onClick={async () => {
                     setNotifWorking(true)
-                    await requestNotificationPermission(user.uid)
+                    const result = await requestNotificationPermission(user.uid)
+                    if (result === 'denied') setNativePermDenied(true)
                     setNotifWorking(false)
                   }}
                   style={{

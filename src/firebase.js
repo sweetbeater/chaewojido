@@ -43,6 +43,9 @@ export const requestNotificationPermission = async (uid) => {
     // 네이티브 iOS: @capacitor-firebase/messaging 사용
     try {
       const { FirebaseMessaging } = await import('@capacitor-firebase/messaging')
+      // iOS 설정에서 차단된 경우 즉시 감지
+      const { receive: current } = await FirebaseMessaging.checkPermissions()
+      if (current === 'denied') return 'denied'
       const { receive } = await FirebaseMessaging.requestPermissions()
       if (receive !== 'granted') return null
       const { token } = await FirebaseMessaging.getToken()

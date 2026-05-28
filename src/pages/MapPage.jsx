@@ -105,8 +105,8 @@ export default function MapPage({ user, onOpenRecord }) {
     : (profile?.teamId && teamData ? teamData.visitedRegions || [] : profile?.visitedRegions || [])
 
   const dataLoaded = isGuest || (profile !== null && (!profile?.teamId || teamData !== null))
-  // 팀 사진 우선, 개인 사진이 덮어쓰기
-  const effectiveRegionPhotos = { ...teamRegionPhotos, ...regionPhotos }
+  // 팀 모드에서는 팀 사진만, 개인 모드에서는 개인 사진만 표시
+  const effectiveRegionPhotos = profile?.teamId ? teamRegionPhotos : regionPhotos
   const hasPhotos = Object.keys(effectiveRegionPhotos).length > 0
   const completionRate = getCompletionRate(visitedRegions)
   const regionInfo = selectedRegion ? REGION_MAP[selectedRegion] : null

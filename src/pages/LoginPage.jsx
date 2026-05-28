@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { signInWithEmailAndPassword, signInAnonymously, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, OAuthProvider, signInWithCredential } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
-import { auth, db } from '../firebase'
+import { signInWithEmailAndPassword, signInAnonymously, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, OAuthProvider, signInWithCredential } from 'firebase/auth'
+import { auth } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication'
 
@@ -47,25 +46,15 @@ export default function LoginPage() {
 
   const handleGoogle = async () => {
     try {
-      let uid
       if (isNative) {
-        // 네이티브 iOS: @capacitor-firebase/authentication 사용
         const result = await FirebaseAuthentication.signInWithGoogle()
         const credential = GoogleAuthProvider.credential(
           result.credential?.idToken,
           result.credential?.accessToken,
         )
-        const { user } = await signInWithCredential(auth, credential)
-        uid = user.uid
+        await signInWithCredential(auth, credential)
       } else {
-        const result = await signInWithPopup(auth, new GoogleAuthProvider())
-        uid = result.user.uid
-      }
-      const snap = await getDoc(doc(db, 'users', uid))
-      if (!snap.exists()) {
-        await signOut(auth)
-        setError('가입된 계정이 없어요. 먼저 회원가입을 해주세요.')
-        return
+        await signInWithPopup(auth, new GoogleAuthProvider())
       }
       navigate('/')
     } catch (err) {
@@ -89,13 +78,7 @@ export default function LoginPage() {
         idToken: result.credential?.idToken,
         rawNonce: result.credential?.nonce,
       })
-      const { user } = await signInWithCredential(auth, credential)
-      const snap = await getDoc(doc(db, 'users', user.uid))
-      if (!snap.exists()) {
-        await signOut(auth)
-        setError('가입된 계정이 없어요. 먼저 회원가입을 해주세요.')
-        return
-      }
+      await signInWithCredential(auth, credential)
       navigate('/')
     } catch (err) {
       const cancelled = err.code === 'SIGN_IN_CANCELLED' ||
@@ -212,13 +195,13 @@ export default function LoginPage() {
           ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
         }}>
           <GoogleIcon />
-          구글로 로그인
+          구글로 시작하기
         </button>
 
         {isNative && (
           <button onClick={handleApple} style={{ ...outlineBtn, marginTop: 10, background: '#000', color: '#fff', borderColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <AppleIcon />
-            Apple로 로그인
+            Apple로 시작하기
           </button>
         )}
 

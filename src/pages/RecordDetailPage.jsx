@@ -92,6 +92,14 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     if (!await confirm('기록을 삭제할까요?', { confirmText: '삭제', destructive: true })) return
     if (teamId) {
       await deleteDoc(doc(db, 'teams', teamId, 'records', recordId))
+      // 팀 기록 삭제 시 동일 타임스탬프의 개인 기록도 함께 삭제
+      if (record.authorUid === user.uid && record.createdAt) {
+        const personalSnap = await getDocs(query(
+          collection(db, 'users', user.uid, 'records'),
+          where('createdAt', '==', record.createdAt)
+        ))
+        for (const d of personalSnap.docs) await deleteDoc(d.ref)
+      }
     } else {
       await deleteDoc(doc(db, 'users', user.uid, 'records', recordId))
       const remaining = await getDocs(query(
