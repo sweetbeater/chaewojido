@@ -48,7 +48,22 @@ export const requestNotificationPermission = async (uid) => {
       if (current === 'denied') return 'denied'
       const { receive } = await FirebaseMessaging.requestPermissions()
       if (receive !== 'granted') return null
-      const { token } = await FirebaseMessaging.getToken()
+
+      // requestPermissions()가 내부적으로 registerForRemoteNotifications()를 호출하지만
+      // APNs 콜백(didRegisterForRemoteNotificationsWithDeviceToken)은 비동기로 도착함.
+      // Firebase SDK가 APNs 토큰을 받기 전에 getToken()을 호출하면 실패하므로 재시도.
+      let token = null
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1500))
+        try {
+          const result = await FirebaseMessaging.getToken()
+          token = result?.token || null
+          if (token) break
+        } catch (e) {
+          console.warn(`FCM getToken 시도 ${attempt + 1} 실패:`, e?.message)
+        }
+      }
+
       if (token && uid) {
         const { doc, setDoc } = await import('firebase/firestore')
         await setDoc(doc(db, 'users', uid), { fcmToken: token }, { merge: true })
