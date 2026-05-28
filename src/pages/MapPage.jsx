@@ -391,7 +391,7 @@ export default function MapPage({ user, onOpenRecord }) {
           <button
             onClick={() => setShowPhotoMap(v => !v)}
             style={{
-              position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)', left: 12, zIndex: 10,
+              position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)', right: 12, zIndex: 10,
               background: showPhotoMap ? '#FF8FAB' : 'rgba(255,255,255,0.9)',
               color: showPhotoMap ? 'white' : '#FF8FAB',
               border: '1.5px solid #FFD6E0',
