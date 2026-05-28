@@ -129,7 +129,9 @@ export default function App() {
         if (!localStorage.getItem('onboardingDone')) {
           setShowOnboarding(true)
         }
-        requestNotificationPermission(u.uid)
+        if (!localStorage.getItem('notifDisabled')) {
+          requestNotificationPermission(u.uid)
+        }
       }
     })
     return () => { clearTimeout(timeout); unsub() }

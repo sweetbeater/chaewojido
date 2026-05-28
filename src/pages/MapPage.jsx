@@ -197,7 +197,7 @@ export default function MapPage({ user, onOpenRecord }) {
           collection(db, 'teams', profile.teamId, 'records'),
           where('regionNum', 'in', toRemove)
         ))
-        teamSnap.docs.forEach(d => { if (d.data().authorUid === user.uid) teamRecordDocs.push(d) })
+        teamSnap.docs.forEach(d => teamRecordDocs.push(d))
       }
       const totalRecords = personalSnap.size + teamRecordDocs.length
 

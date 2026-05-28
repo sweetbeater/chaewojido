@@ -233,6 +233,14 @@ export default function LoginPage() {
         <button onClick={() => navigate('/register')} style={{ marginTop: 16, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '16px auto 0' }}>
           아직 계정이 없으신가요? <span style={{ color: '#FF7BA9', fontWeight: 700 }}>회원가입</span>
         </button>
+
+        <p style={{ fontSize: 10, color: '#C0C0C0', marginTop: 14, textAlign: 'center', lineHeight: 1.7 }}>
+          로그인하면{' '}
+          <a href="/privacy.html" style={{ color: '#C0C0C0', textDecoration: 'underline' }}>
+            개인정보처리방침
+          </a>
+          에 동의합니다.
+        </p>
       </div>
     </div>
   )

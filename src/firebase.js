@@ -49,6 +49,7 @@ export const requestNotificationPermission = async (uid) => {
       if (token && uid) {
         const { doc, setDoc } = await import('firebase/firestore')
         await setDoc(doc(db, 'users', uid), { fcmToken: token }, { merge: true })
+        localStorage.removeItem('notifDisabled')
       }
       return token
     } catch (err) {
@@ -87,10 +88,8 @@ export const requestNotificationPermission = async (uid) => {
 
 export const disableNotifications = async (uid) => {
   if (isNative) {
-    try {
-      const { FirebaseMessaging } = await import('@capacitor-firebase/messaging')
-      await FirebaseMessaging.deleteToken()
-    } catch (_) {}
+    // 네이티브: deleteToken 후 getToken이 iOS에서 신뢰성 없음 → 디바이스 토큰 유지, Firestore만 제거
+    localStorage.setItem('notifDisabled', '1')
   } else if (messaging) {
     try { await deleteToken(messaging) } catch (_) {}
   }

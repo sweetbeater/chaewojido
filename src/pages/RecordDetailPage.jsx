@@ -14,6 +14,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const [profile, setProfile] = useState(null)
   const [commentsLoading, setCommentsLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [fullscreenPhoto, setFullscreenPhoto] = useState(null)
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
   const [editPhoto, setEditPhoto] = useState(null)
@@ -139,6 +140,35 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const pageWrapper = (children) => (
     <>
       {modal}
+      {fullscreenPhoto && (
+        <div
+          onClick={() => setFullscreenPhoto(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <img
+            src={fullscreenPhoto}
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '100vh', objectFit: 'contain' }}
+          />
+          <button
+            onClick={() => setFullscreenPhoto(null)}
+            style={{
+              position: 'absolute',
+              bottom: 'calc(env(safe-area-inset-bottom, 0px) + 32px)',
+              right: 24,
+              width: 52, height: 52, borderRadius: 26,
+              background: 'rgba(255,255,255,0.15)', color: 'white',
+              fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.3)',
+            }}
+          >✕</button>
+        </div>
+      )}
       <div style={{
         position: 'fixed', top: 0, bottom: 0,
         left: 'max(0px, calc(50vw - 215px))',
@@ -263,12 +293,15 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                     ...(pos === 'bottomRight' ? { bottom: 28, right: 3 } : {}),
                   }}>★</span>
                 ))}
-                <img src={url} alt={`사진 ${i + 1}`} style={{
-                  width: '100%',
-                  aspectRatio: '4/5',
-                  objectFit: 'cover',
-                  display: 'block',
-                }} />
+                <img src={url} alt={`사진 ${i + 1}`}
+                  onClick={() => setFullscreenPhoto(url)}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '4/5',
+                    objectFit: 'cover',
+                    display: 'block',
+                    cursor: 'pointer',
+                  }} />
                 <p style={{
                   textAlign: 'right', marginTop: 10, paddingRight: 2,
                   fontSize: 14, color: '#C4B0B4',
