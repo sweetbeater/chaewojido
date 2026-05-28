@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, arrayRemove } from 'firebase/firestore'
-import { updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
+import { updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider, OAuthProvider } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from '../firebase'
 import { useNavigate } from 'react-router-dom'
@@ -90,6 +90,26 @@ export default function EditProfilePage({ user }) {
         if (!deletePassword) return setMessage('비밀번호를 입력해주세요')
         const credential = EmailAuthProvider.credential(user.email, deletePassword)
         await reauthenticateWithCredential(user, credential)
+      }
+
+      // Apple 유저: deleteUser가 requires-recent-login을 던지면 Firestore가 먼저 삭제되는
+      // 문제(재시작 시 CompleteProfileScreen 표시)를 막기 위해 삭제 전 선제 재인증.
+      // Face ID/Touch ID로 진행되므로 UX 부담 최소화.
+      if (isAppleUser) {
+        try {
+          const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+          const result = await FirebaseAuthentication.signInWithApple()
+          const cred = new OAuthProvider('apple.com').credential({
+            idToken: result.credential?.idToken,
+            rawNonce: result.credential?.nonce,
+          })
+          await reauthenticateWithCredential(user, cred)
+        } catch (appleErr) {
+          const cancelled = appleErr.code === 'SIGN_IN_CANCELLED' ||
+            (typeof appleErr.message === 'string' && appleErr.message.toLowerCase().includes('cancel'))
+          if (cancelled) return
+          throw appleErr
+        }
       }
 
       // 개인 기록 삭제

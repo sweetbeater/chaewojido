@@ -46,23 +46,43 @@ export const requestNotificationPermission = async (uid) => {
       // iOS 설정에서 차단된 경우 즉시 감지
       const { receive: current } = await FirebaseMessaging.checkPermissions()
       if (current === 'denied') return 'denied'
-      const { receive } = await FirebaseMessaging.requestPermissions()
-      if (receive !== 'granted') return null
 
-      // requestPermissions()가 내부적으로 registerForRemoteNotifications()를 호출하지만
-      // APNs 콜백(didRegisterForRemoteNotificationsWithDeviceToken)은 비동기로 도착함.
-      // Firebase SDK가 APNs 토큰을 받기 전에 getToken()을 호출하면 실패하므로 재시도.
-      let token = null
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 1500))
-        try {
-          const result = await FirebaseMessaging.getToken()
-          token = result?.token || null
-          if (token) break
-        } catch (e) {
-          console.warn(`FCM getToken 시도 ${attempt + 1} 실패:`, e?.message)
-        }
+      // requestPermissions 전에 tokenReceived 리스너 등록.
+      // Firebase가 APNs 토큰 → FCM 토큰 교환을 완료하면 즉시 이벤트 발생.
+      // getToken()이 hang하는 경우를 방지하기 위해 이벤트 + 폴링 + 타임아웃을 race.
+      let removeListener = null
+      const tokenFromEvent = new Promise(resolve => {
+        FirebaseMessaging.addListener('tokenReceived', e => resolve(e?.token || null))
+          .then(handle => { removeListener = () => handle.remove().catch(() => {}) })
+          .catch(() => resolve(null))
+      })
+
+      const { receive } = await FirebaseMessaging.requestPermissions()
+      if (receive !== 'granted') {
+        if (removeListener) removeListener()
+        return null
       }
+
+      // 폴링: 호출당 4초 타임아웃으로 hang 방지, 2초 간격 8회 재시도
+      const pollToken = async () => {
+        for (let i = 0; i < 8; i++) {
+          if (i > 0) await new Promise(r => setTimeout(r, 2000))
+          const t = await Promise.race([
+            FirebaseMessaging.getToken().then(r => r?.token || null).catch(() => null),
+            new Promise(r => setTimeout(() => r(null), 4000)),
+          ])
+          if (t) return t
+        }
+        return null
+      }
+
+      // tokenReceived 이벤트, 폴링, 15초 전체 타임아웃 중 가장 먼저 오는 결과 사용
+      const token = await Promise.race([
+        tokenFromEvent,
+        pollToken(),
+        new Promise(r => setTimeout(() => r(null), 15000)),
+      ])
+      if (removeListener) removeListener()
 
       if (token && uid) {
         const { doc, setDoc } = await import('firebase/firestore')
