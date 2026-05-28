@@ -4,6 +4,8 @@ import { db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { useConfirm } from '../components/ConfirmModal'
 
+const profileCache = {}
+
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
@@ -43,10 +45,14 @@ export default function TeamPage({ user, onSelectRecord }) {
   useEffect(() => {
     if (!teamData?.members?.length) return
     const fetchMembers = async () => {
+      const toFetch = teamData.members.filter(uid => !profileCache[uid])
+      for (const uid of toFetch) {
+        const snap = await getDoc(doc(db, 'users', uid))
+        if (snap.exists()) profileCache[uid] = snap.data()
+      }
       const profiles = {}
       for (const uid of teamData.members) {
-        const snap = await getDoc(doc(db, 'users', uid))
-        if (snap.exists()) profiles[uid] = snap.data()
+        if (profileCache[uid]) profiles[uid] = profileCache[uid]
       }
       setMemberProfiles(profiles)
     }
