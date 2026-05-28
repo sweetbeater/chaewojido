@@ -136,6 +136,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         : doc(db, 'users', user.uid, 'records', recordId)
       await updateDoc(updateRef, {
         title: editTitle, content: editContent, photoURL,
+        photoURLs: photoURL ? [photoURL] : [],
       })
       setEditing(false)
     } catch (err) {
