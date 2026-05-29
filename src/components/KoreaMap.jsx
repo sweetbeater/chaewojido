@@ -3,7 +3,7 @@ import { SVG_TO_REGION, REGION_INFO, REGION_TO_SVG } from '../utils/regions'
 
 const COLOR_VISITED = '#FF8FAB'
 const COLOR_UNVISITED = '#F2E8D5'
-const COLOR_PREVIEW = '#FF85B3'
+const COLOR_PREVIEW = '#FF3D90'
 const COLOR_HIGHLIGHT_VISITED = '#FFBC00'
 
 const visitedColor = (count) => {
