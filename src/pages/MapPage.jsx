@@ -229,33 +229,41 @@ export default function MapPage({ user, onOpenRecord }) {
       }
 
       const isTeamMode = !!(profile?.teamId && teamData)
-      const personalSnap = await getDocs(query(
-        collection(db, 'users', user.uid, 'records'),
-        where('regionNum', 'in', toRemove)
-      ))
-      // 팀 모드: 현재 유저의 팀 기록도 조회
-      const teamRecordDocs = []
+
       if (isTeamMode) {
+        // 팀 모드: 팀 기록만 조회/삭제, 개인 기록은 건드리지 않음
         const teamSnap = await getDocs(query(
           collection(db, 'teams', profile.teamId, 'records'),
           where('regionNum', 'in', toRemove)
         ))
-        teamSnap.docs.forEach(d => teamRecordDocs.push(d))
-      }
-      // 팀 모드: 팀 기록 수 기준 (상대방 기록도 포함), 개인 모드: 개인 기록 수 기준
-      const totalRecords = isTeamMode ? teamRecordDocs.length : personalSnap.size
-
-      if (totalRecords > 0) {
-        const ok = await confirm(
-          `⚠️ ${capturedRegionName}의 기록 ${totalRecords}개가 모두 삭제됩니다.\n색칠도 함께 취소할까요?`,
-          { confirmText: '삭제하기', cancelText: '아니요', destructive: true }
-        )
-        if (!ok) return
-        for (const d of personalSnap.docs) await deleteDoc(d.ref)
-        for (const d of teamRecordDocs) await deleteDoc(d.ref)
+        if (teamSnap.size > 0) {
+          const ok = await confirm(
+            `⚠️ ${capturedRegionName}의 기록 ${teamSnap.size}개가 모두 삭제됩니다.\n색칠도 함께 취소할까요?`,
+            { confirmText: '삭제하기', cancelText: '아니요', destructive: true }
+          )
+          if (!ok) return
+          for (const d of teamSnap.docs) await deleteDoc(d.ref)
+        } else {
+          const ok = await confirm(`${capturedRegionName} 색칠을 취소할까요?`, { confirmText: '지우기', cancelText: '아니요', destructive: true })
+          if (!ok) return
+        }
       } else {
-        const ok = await confirm(`${capturedRegionName} 색칠을 취소할까요?`, { confirmText: '지우기', cancelText: '아니요', destructive: true })
-        if (!ok) return
+        // 개인 모드: 개인 기록만 조회/삭제
+        const personalSnap = await getDocs(query(
+          collection(db, 'users', user.uid, 'records'),
+          where('regionNum', 'in', toRemove)
+        ))
+        if (personalSnap.size > 0) {
+          const ok = await confirm(
+            `⚠️ ${capturedRegionName}의 기록 ${personalSnap.size}개가 모두 삭제됩니다.\n색칠도 함께 취소할까요?`,
+            { confirmText: '삭제하기', cancelText: '아니요', destructive: true }
+          )
+          if (!ok) return
+          for (const d of personalSnap.docs) await deleteDoc(d.ref)
+        } else {
+          const ok = await confirm(`${capturedRegionName} 색칠을 취소할까요?`, { confirmText: '지우기', cancelText: '아니요', destructive: true })
+          if (!ok) return
+        }
       }
 
       if (profile?.teamId && teamData) {

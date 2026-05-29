@@ -58,7 +58,6 @@ export default function RecordPage({ user, regionNum }) {
       }
       setSaveStatus('저장 중...')
       const [y, m, d] = travelDate.split('-').map(Number)
-      const personalRef = doc(collection(db, 'users', user.uid, 'records'))
       const recordData = {
         regionNum, regionName: regionInfo?.name || '알 수 없는 지역',
         title, content,
@@ -67,13 +66,17 @@ export default function RecordPage({ user, regionNum }) {
         travelDate: new Date(y, m - 1, d, 12, 0, 0),
         authorUid: user.uid,
         authorNickname: profile?.nickname || '여행자',
-        personalRecordId: personalRef.id,
+        authorPhotoURL: profile?.photoURL || null,
         createdAt: new Date(),
       }
-      await setDoc(personalRef, recordData)
       if (profile?.teamId) {
+        // 팀 모드: 팀 기록만 저장
         const teamRef = doc(collection(db, 'teams', profile.teamId, 'records'))
         await setDoc(teamRef, recordData)
+      } else {
+        // 개인 모드: 개인 기록만 저장
+        const personalRef = doc(collection(db, 'users', user.uid, 'records'))
+        await setDoc(personalRef, recordData)
       }
       setSaveStatus('저장됨 ✓')
       setTimeout(() => navigate('/'), 700)

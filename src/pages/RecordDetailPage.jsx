@@ -123,29 +123,11 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const handleDelete = async () => {
     if (!await confirm('기록을 삭제할까요?', { confirmText: '삭제', destructive: true })) return
     if (teamId) {
+      // 팀 모드: 팀 기록만 삭제
       await deleteDoc(doc(db, 'teams', teamId, 'records', recordId))
-      if (record.authorUid === user.uid) {
-        // personalRecordId가 있으면 직접 삭제 (더 신뢰성 높음)
-        if (record.personalRecordId) {
-          await deleteDoc(doc(db, 'users', user.uid, 'records', record.personalRecordId)).catch(() => {})
-        } else if (record.createdAt) {
-          const personalSnap = await getDocs(query(
-            collection(db, 'users', user.uid, 'records'),
-            where('createdAt', '==', record.createdAt)
-          ))
-          for (const d of personalSnap.docs) await deleteDoc(d.ref)
-        }
-      }
     } else {
+      // 개인 모드: 개인 기록만 삭제, 해당 지역 기록이 없으면 visitedRegions에서 제거
       await deleteDoc(doc(db, 'users', user.uid, 'records', recordId))
-      // 팀이 있는 경우 team 컬렉션의 동일 기록도 함께 삭제 (teamId 누락 방어)
-      if (profile?.teamId && record.createdAt) {
-        const teamSnap = await getDocs(query(
-          collection(db, 'teams', profile.teamId, 'records'),
-          where('createdAt', '==', record.createdAt)
-        ))
-        for (const d of teamSnap.docs) await deleteDoc(d.ref)
-      }
       const remaining = await getDocs(query(
         collection(db, 'users', user.uid, 'records'),
         where('regionNum', '==', record.regionNum)
