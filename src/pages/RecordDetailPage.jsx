@@ -35,7 +35,8 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const [editPhotos, setEditPhotos] = useState([])
   const [editPreviews, setEditPreviews] = useState([])
   const [editExistingURLs, setEditExistingURLs] = useState([])
-  const [editLoading, setEditLoading] = useState(false)
+  const [editSaveStatus, setEditSaveStatus] = useState('')
+  const [editTravelDate, setEditTravelDate] = useState('')
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
   const { confirm, modal } = useConfirm()
@@ -108,16 +109,28 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     if (!await confirm('기록을 삭제할까요?', { confirmText: '삭제', destructive: true })) return
     if (teamId) {
       await deleteDoc(doc(db, 'teams', teamId, 'records', recordId))
-      // 팀 기록 삭제 시 동일 타임스탬프의 개인 기록도 함께 삭제
-      if (record.authorUid === user.uid && record.createdAt) {
-        const personalSnap = await getDocs(query(
-          collection(db, 'users', user.uid, 'records'),
-          where('createdAt', '==', record.createdAt)
-        ))
-        for (const d of personalSnap.docs) await deleteDoc(d.ref)
+      if (record.authorUid === user.uid) {
+        // personalRecordId가 있으면 직접 삭제 (더 신뢰성 높음)
+        if (record.personalRecordId) {
+          await deleteDoc(doc(db, 'users', user.uid, 'records', record.personalRecordId)).catch(() => {})
+        } else if (record.createdAt) {
+          const personalSnap = await getDocs(query(
+            collection(db, 'users', user.uid, 'records'),
+            where('createdAt', '==', record.createdAt)
+          ))
+          for (const d of personalSnap.docs) await deleteDoc(d.ref)
+        }
       }
     } else {
       await deleteDoc(doc(db, 'users', user.uid, 'records', recordId))
+      // 팀이 있는 경우 team 컬렉션의 동일 기록도 함께 삭제 (teamId 누락 방어)
+      if (profile?.teamId && record.createdAt) {
+        const teamSnap = await getDocs(query(
+          collection(db, 'teams', profile.teamId, 'records'),
+          where('createdAt', '==', record.createdAt)
+        ))
+        for (const d of teamSnap.docs) await deleteDoc(d.ref)
+      }
       const remaining = await getDocs(query(
         collection(db, 'users', user.uid, 'records'),
         where('regionNum', '==', record.regionNum)
@@ -138,20 +151,28 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     setEditExistingURLs(existingURLs)
     setEditPhotos([])
     setEditPreviews([])
+    const travelDateObj = record.travelDate?.toDate?.() || record.createdAt?.toDate?.() || new Date()
+    const y = travelDateObj.getFullYear()
+    const m = String(travelDateObj.getMonth() + 1).padStart(2, '0')
+    const d = String(travelDateObj.getDate()).padStart(2, '0')
+    setEditTravelDate(`${y}-${m}-${d}`)
     setEditing(true)
   }
 
   const handleEditSave = async () => {
     if (!editTitle.trim()) return alert('제목을 입력해주세요')
-    setEditLoading(true)
+    setEditSaveStatus('준비 중...')
     try {
       const newURLs = []
-      for (const photo of editPhotos) {
-        const storageRef = ref(storage, `records/${user.uid}/${Date.now()}_${photo.name}`)
-        await uploadBytes(storageRef, photo)
+      for (let i = 0; i < editPhotos.length; i++) {
+        setEditSaveStatus(`사진 ${i + 1}/${editPhotos.length} 업로드 중...`)
+        const storageRef = ref(storage, `records/${user.uid}/${Date.now()}_${editPhotos[i].name}`)
+        await uploadBytes(storageRef, editPhotos[i])
         newURLs.push(await getDownloadURL(storageRef))
       }
+      setEditSaveStatus('저장 중...')
       const allPhotoURLs = [...editExistingURLs, ...newURLs]
+      const [y, m, d] = editTravelDate.split('-').map(Number)
       const updateRef = teamId
         ? doc(db, 'teams', teamId, 'records', recordId)
         : doc(db, 'users', user.uid, 'records', recordId)
@@ -160,13 +181,15 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         content: editContent,
         photoURL: allPhotoURLs[0] || null,
         photoURLs: allPhotoURLs,
+        travelDate: new Date(y, m - 1, d, 12, 0, 0),
       })
-      setEditing(false)
+      setEditSaveStatus('저장됨 ✓')
+      setTimeout(() => setEditing(false), 700)
     } catch (err) {
       console.error(err)
+      setEditSaveStatus('')
       alert('저장에 실패했어요')
     }
-    setEditLoading(false)
   }
 
   const pageWrapper = (children) => (
@@ -203,8 +226,8 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
       )}
       <div style={{
         position: 'fixed', top: 0, bottom: 0,
-        left: 'max(0px, calc(50vw - 215px))',
-        right: 'max(0px, calc(50vw - 215px))',
+        left: 0,
+        right: 0,
         background: '#FFFDF8', overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
       }}>
@@ -219,8 +242,9 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     <div style={{ textAlign: 'center', padding: 40, color: '#FF7BA9' }}>불러오는 중...</div>
   )
 
-  const dateStr = record.createdAt?.toDate
-    ? record.createdAt.toDate().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+  const displayDateObj = record.travelDate?.toDate?.() || record.createdAt?.toDate?.()
+  const dateStr = displayDateObj
+    ? displayDateObj.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
     : ''
 
   const isLiked = (record.likes || []).includes(user.uid)
@@ -298,15 +322,25 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
           </div>
         )}
 
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: '#B0B0B0', marginBottom: 5 }}>여행 날짜</p>
+          <input
+            type="date"
+            value={editTravelDate}
+            onChange={e => setEditTravelDate(e.target.value)}
+            style={{ ...inputStyle, marginBottom: 0 }}
+          />
+        </div>
         <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="제목" style={{ ...inputStyle, fontSize: 18 }} />
         <textarea value={editContent} onChange={e => setEditContent(e.target.value)} placeholder="내용" rows={5} style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16 }} />
-        <button onClick={handleEditSave} disabled={editLoading} style={{
+        <button onClick={handleEditSave} disabled={!!editSaveStatus} style={{
           width: '100%', padding: '14px', borderRadius: 16,
-          background: editLoading ? '#FFB3C6' : 'linear-gradient(135deg, #FF7BA9, #FF5499)',
+          background: editSaveStatus === '저장됨 ✓' ? '#4CAF50' : editSaveStatus ? '#FFB3C6' : 'linear-gradient(135deg, #FF7BA9, #FF5499)',
           color: 'white', fontSize: 15, fontWeight: 700,
           boxShadow: '0 4px 16px rgba(255,123,169,0.3)',
+          transition: 'background 0.3s',
         }}>
-          {editLoading ? '저장 중...' : '저장하기'}
+          {editSaveStatus || '저장하기'}
         </button>
       </>
     )

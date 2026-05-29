@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import KoreaMap from '../components/KoreaMap'
 import BadgePopup from '../components/BadgePopup'
 import { useConfirm } from '../components/ConfirmModal'
-import { getCompletionRate, TOTAL_REGIONS, REGION_MAP, SVG_TO_REGION, searchRegions } from '../utils/regions'
+import { getCompletionRate, TOTAL_REGIONS, REGION_MAP, SVG_TO_REGION, REGION_TO_SVG, searchRegions } from '../utils/regions'
 import { getNewBadges } from '../utils/badges'
 import { playPaintSound, playBadgeSound } from '../utils/sounds'
 
@@ -29,6 +29,28 @@ const buildRegionPhotos = (docs) => {
   }
   return photos
 }
+
+const HEART_PARTICLES = [
+  { x: '4%',  dur: '2.1s', delay: '0.00s', size: '28px' },
+  { x: '12%', dur: '2.6s', delay: '0.10s', size: '20px' },
+  { x: '21%', dur: '1.9s', delay: '0.20s', size: '34px' },
+  { x: '30%', dur: '2.3s', delay: '0.05s', size: '24px' },
+  { x: '39%', dur: '2.8s', delay: '0.15s', size: '36px' },
+  { x: '48%', dur: '1.8s', delay: '0.30s', size: '22px' },
+  { x: '57%', dur: '2.4s', delay: '0.00s', size: '30px' },
+  { x: '66%', dur: '2.0s', delay: '0.25s', size: '26px' },
+  { x: '75%', dur: '2.5s', delay: '0.12s', size: '28px' },
+  { x: '84%', dur: '1.7s', delay: '0.20s', size: '24px' },
+  { x: '92%', dur: '2.2s', delay: '0.40s', size: '20px' },
+  { x: '8%',  dur: '2.0s', delay: '0.45s', size: '18px' },
+  { x: '26%', dur: '2.7s', delay: '0.35s', size: '28px' },
+  { x: '44%', dur: '1.9s', delay: '0.55s', size: '22px' },
+  { x: '62%', dur: '2.3s', delay: '0.60s', size: '32px' },
+  { x: '80%', dur: '2.1s', delay: '0.50s', size: '26px' },
+  { x: '17%', dur: '2.4s', delay: '0.70s', size: '20px' },
+  { x: '52%', dur: '2.0s', delay: '0.65s', size: '30px' },
+  { x: '88%', dur: '1.8s', delay: '0.75s', size: '24px' },
+]
 
 // 지도 하단부 지역 — 팝업을 상단에 표시
 const TOP_POPUP_REGIONS = new Set([
@@ -118,6 +140,15 @@ export default function MapPage({ user, onOpenRecord }) {
 
   const searchResults = searchOpen && searchQuery.trim() ? searchRegions(searchQuery) : []
   const closeSearch = () => { setSearchOpen(false); setSearchQuery('') }
+  const openSearch = () => { setSearchOpen(true); setShowPhotoMap(false) }
+
+  const handlePhotoClick = (regionId) => {
+    if (!showPhotoMap) return
+    const svgNum = REGION_TO_SVG[regionId]
+    if (!svgNum) return
+    onOpenRecord(svgNum)
+    navigate('/records')
+  }
 
   const addVisited = async (svgNum) => {
     if (isGuest) {
@@ -233,8 +264,8 @@ export default function MapPage({ user, onOpenRecord }) {
   return (
     <div style={{
       position: 'fixed', top: 0, bottom: 0,
-      left: 'max(0px, calc(50vw - 215px))',
-      right: 'max(0px, calc(50vw - 215px))',
+      left: '0px',
+      right: '0px',
       paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: '0',
       display: 'flex', flexDirection: 'column',
@@ -244,6 +275,34 @@ export default function MapPage({ user, onOpenRecord }) {
         <BadgePopup badges={newBadges} onClose={() => setNewBadges([])} />
       )}
       {modal}
+
+      {/* 이스터에그: 사랑해!! */}
+      {searchQuery === '사랑해!!' && (
+        <>
+          {HEART_PARTICLES.map((h, i) => (
+            <div key={i} style={{
+              position: 'fixed', bottom: 0, left: h.x,
+              fontSize: h.size, zIndex: 9999,
+              animation: `heartFloat ${h.dur} ease-out ${h.delay} forwards`,
+              pointerEvents: 'none', lineHeight: 1,
+            }}>❤️</div>
+          ))}
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9998,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            pointerEvents: 'none',
+          }}>
+            <div style={{
+              fontSize: 52, fontWeight: 900,
+              color: '#FF3D90',
+              textShadow: '0 4px 24px rgba(255,61,144,0.45)',
+              animation: 'heartTextPop 0.45s ease-out forwards',
+            }}>
+              사랑해!!
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── 게이지 바 ── */}
       <div style={{
@@ -338,7 +397,7 @@ export default function MapPage({ user, onOpenRecord }) {
             }}>✕</button>
           </div>
         ) : (
-          <button onClick={() => setSearchOpen(true)} style={{
+          <button onClick={openSearch} style={{
             width: '100%', padding: '7px 14px', borderRadius: 20,
             background: 'rgba(255,255,255,0.82)', border: 'none',
             display: 'flex', alignItems: 'center', gap: 8,
@@ -349,7 +408,7 @@ export default function MapPage({ user, onOpenRecord }) {
         )}
 
         {/* 검색 결과 드롭다운 */}
-        {searchOpen && searchQuery.trim() && (
+        {searchOpen && searchQuery.trim() && searchQuery !== '사랑해!!' && (
           <div style={{
             position: 'absolute', top: '100%', left: 12, right: 12,
             background: 'rgba(255,255,255,0.97)',
@@ -389,6 +448,7 @@ export default function MapPage({ user, onOpenRecord }) {
           dataLoaded={dataLoaded}
           regionPhotos={effectiveRegionPhotos}
           showPhotoMap={showPhotoMap}
+          onPhotoClick={handlePhotoClick}
         />
         {hasPhotos && (
           <button
@@ -404,7 +464,7 @@ export default function MapPage({ user, onOpenRecord }) {
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
             }}
           >
-            📷 사진
+            {showPhotoMap ? '사진 on' : '사진 off'}
           </button>
         )}
       </div>
@@ -416,8 +476,8 @@ export default function MapPage({ user, onOpenRecord }) {
         <div style={isTop ? {
           position: 'fixed',
           top: 'calc(env(safe-area-inset-top, 0px) + 120px)',
-          left: 'max(0px, calc(50vw - 215px))',
-          right: 'max(0px, calc(50vw - 215px))',
+          left: '0px',
+          right: '0px',
           zIndex: 150,
           background: 'white',
           borderRadius: '0 0 20px 20px',
@@ -427,8 +487,8 @@ export default function MapPage({ user, onOpenRecord }) {
         } : {
           position: 'fixed',
           bottom: 'calc(env(safe-area-inset-bottom, 0px) + 84px)',
-          left: 'max(0px, calc(50vw - 215px))',
-          right: 'max(0px, calc(50vw - 215px))',
+          left: '0px',
+          right: '0px',
           zIndex: 150,
           background: 'white',
           borderRadius: 20,

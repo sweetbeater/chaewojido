@@ -7,7 +7,19 @@ initializeApp()
 
 const sendPush = async (messaging, token, title, body) => {
   try {
-    await messaging.send({ token, notification: { title, body } })
+    await messaging.send({
+      token,
+      notification: { title, body },
+      apns: {
+        payload: {
+          aps: { sound: 'default', badge: 1 },
+        },
+      },
+      android: {
+        priority: 'high',
+        notification: { sound: 'default' },
+      },
+    })
   } catch (err) {
     console.error('FCM send error:', err)
   }

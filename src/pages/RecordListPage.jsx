@@ -39,7 +39,18 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
     const unsub = onSnapshot(q, { includeMetadataChanges: true }, snap => {
       // 캐시 결과가 빈 경우: 서버 응답 대기 (빈 캐시로 인한 false empty 방지)
       if (snap.metadata.fromCache && snap.empty) return
-      setRecords(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      const raw = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      // createdAt + authorUid 기준 중복 제거 (team 컬렉션 잔류 기록 방어)
+      const seen = new Set()
+      const deduped = raw.filter(r => {
+        const key = r.createdAt
+          ? `${r.createdAt.seconds}_${r.createdAt.nanoseconds}_${r.authorUid || ''}`
+          : r.id
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
+      setRecords(deduped)
       if (!snap.metadata.fromCache) setServerConfirmed(true)
       setLoading(false)
     }, err => {

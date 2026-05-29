@@ -173,7 +173,7 @@ export default function TeamPage({ user, onSelectRecord }) {
     return (
       <div style={{
         position: 'fixed', top: 0, bottom: 0,
-        left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))',
+        left: '0px', right: '0px',
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: 'env(safe-area-inset-top, 0px) 32px 80px',
         textAlign: 'center', background: '#FFFDF8', overflowY: 'auto',
@@ -201,7 +201,7 @@ export default function TeamPage({ user, onSelectRecord }) {
     return (
       <div style={{
         position: 'fixed', top: 0, bottom: 0,
-        left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))',
+        left: '0px', right: '0px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: '#FFFDF8',
       }}>
@@ -215,7 +215,7 @@ export default function TeamPage({ user, onSelectRecord }) {
     return (
       <div style={{
         position: 'fixed', top: 0, bottom: 0,
-        left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))',
+        left: '0px', right: '0px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: '#FFFDF8',
       }}>
@@ -226,7 +226,7 @@ export default function TeamPage({ user, onSelectRecord }) {
 
   if (profile?.teamId && teamData) {
     return (
-      <div style={{ position: 'fixed', top: 0, bottom: 0, left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))', padding: 'calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <div style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
         {modal}
         {/* 팀 이름 + 수정 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
@@ -300,13 +300,23 @@ export default function TeamPage({ user, onSelectRecord }) {
                 {showAllRecords ? '접기 ↑' : '더보기 →'}
               </button>
             </div>
-            {recentRecords.map((record, idx) => {
-              const dateStr = record.createdAt?.toDate
-                ? record.createdAt.toDate().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
+            {(showAllRecords
+            ? [...recentRecords].sort((a, b) => {
+                const da = a.travelDate?.toDate?.() || a.createdAt?.toDate?.() || new Date(0)
+                const db2 = b.travelDate?.toDate?.() || b.createdAt?.toDate?.() || new Date(0)
+                return db2 - da
+              })
+            : recentRecords
+          ).map((record, idx, list) => {
+              const displayDate = record.travelDate?.toDate?.() || record.createdAt?.toDate?.()
+              const dateStr = displayDate
+                ? displayDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
                 : ''
               const author = memberProfiles[record.authorUid]
-              const date = record.createdAt?.toDate?.()
-              const prevDate = idx > 0 ? recentRecords[idx - 1].createdAt?.toDate?.() : null
+              const date = displayDate
+              const prevDate = idx > 0
+                ? (list[idx - 1].travelDate?.toDate?.() || list[idx - 1].createdAt?.toDate?.())
+                : null
               const showMonthHeader = showAllRecords && date && (
                 !prevDate ||
                 date.getFullYear() !== prevDate.getFullYear() ||
@@ -384,7 +394,7 @@ export default function TeamPage({ user, onSelectRecord }) {
 
   if (mode === 'create') {
     return (
-      <div style={{ position: 'fixed', top: 0, bottom: 0, left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))', padding: 'calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto' }}>
         {modal}
         <button onClick={() => setMode('main')} style={{ background: 'none', fontSize: 20, marginBottom: 16 }}>←</button>
         <h2 style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 8 }}>팀 만들기</h2>
@@ -404,7 +414,7 @@ export default function TeamPage({ user, onSelectRecord }) {
 
   if (mode === 'join') {
     return (
-      <div style={{ position: 'fixed', top: 0, bottom: 0, left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))', padding: 'calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto' }}>
         {modal}
         <button onClick={() => setMode('main')} style={{ background: 'none', fontSize: 20, marginBottom: 16 }}>←</button>
         <h2 style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 8 }}>팀 참여하기</h2>
@@ -426,7 +436,7 @@ export default function TeamPage({ user, onSelectRecord }) {
   return (
     <div style={{
       position: 'fixed', top: 0, bottom: 0,
-      left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))',
+      left: '0px', right: '0px',
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       padding: 'env(safe-area-inset-top, 0px) 32px 80px',
       background: '#FFFDF8', overflowY: 'auto',

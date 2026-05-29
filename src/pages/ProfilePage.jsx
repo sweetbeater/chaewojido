@@ -70,7 +70,7 @@ export default function ProfilePage({ user }) {
   ]
 
   return (
-    <div style={{ position: 'fixed', top: 0, bottom: 0, left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))', padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+    <div style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
 
       {/* 배지 상세 모달 */}
       {selectedBadge && (

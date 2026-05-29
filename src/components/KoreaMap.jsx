@@ -23,10 +23,11 @@ const ULLEUNG_TX = -120   // 울릉도·독도 X 오프셋 (동해안 max x=536 
 // 방문 여부 판단: visitedRegions 배열은 구 SVG 번호("25") 또는 regionId 모두 허용
 const toRegionId = (n) => SVG_TO_REGION[String(n)] || String(n)
 
-export default function KoreaMap({ visitedRegions = [], highlightedRegion, recordCounts = {}, onRegionClick, dataLoaded = true, regionPhotos = {}, showPhotoMap = true }) {
+export default function KoreaMap({ visitedRegions = [], highlightedRegion, recordCounts = {}, onRegionClick, onPhotoClick, dataLoaded = true, regionPhotos = {}, showPhotoMap = true }) {
   const containerRef = useRef(null)
   const svgRef = useRef(null)
   const onClickRef = useRef(onRegionClick)
+  const onPhotoClickRef = useRef(onPhotoClick)
   const prevVisitedRef = useRef([])
   const [ready, setReady] = useState(false)
   const [colored, setColored] = useState(false)
@@ -39,7 +40,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
   const cachedCWRef = useRef(0)
   const transformRef = useRef({ s: 1, tx: 0, ty: 0 })
 
-  useEffect(() => { onClickRef.current = onRegionClick })
+  useEffect(() => { onClickRef.current = onRegionClick; onPhotoClickRef.current = onPhotoClick })
 
   // ── SVG 로드 ──
   useEffect(() => {
@@ -326,7 +327,12 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       const count = recordCounts[regionId] || 0
 
       const wrap = document.createElement('div')
-      wrap.style.cssText = `position:absolute;left:${pxX - 28}px;top:${pxY - 66}px;width:56px;height:66px;pointer-events:none;transform:scale(${(1 / curS).toFixed(4)});transform-origin:50% 100%;`
+      wrap.style.cssText = `position:absolute;left:${pxX - 28}px;top:${pxY - 66}px;width:56px;height:66px;pointer-events:auto;transform:scale(${(1 / curS).toFixed(4)});transform-origin:50% 100%;cursor:pointer;`
+      const capturedRegionId = regionId
+      wrap.addEventListener('click', (e) => {
+        e.stopPropagation()
+        onPhotoClickRef.current?.(capturedRegionId)
+      })
       const frame = document.createElement('div')
       frame.style.cssText = `width:56px;height:56px;background:white;padding:2px;border-radius:7px;overflow:hidden;box-sizing:border-box;box-shadow:0 3px 10px rgba(0,0,0,0.22),0 1px 3px rgba(0,0,0,0.12);`
       const img = document.createElement('img')

@@ -7,12 +7,18 @@ import { REGION_MAP } from '../utils/regions'
 
 const MAX_PHOTOS = 15
 
+function todayString() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
 export default function RecordPage({ user, regionNum }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [photos, setPhotos] = useState([])
   const [previews, setPreviews] = useState([])
-  const [loading, setLoading] = useState(false)
+  const [travelDate, setTravelDate] = useState(todayString)
+  const [saveStatus, setSaveStatus] = useState('')
   const [profile, setProfile] = useState(null)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
@@ -41,44 +47,50 @@ export default function RecordPage({ user, regionNum }) {
 
   const handleSubmit = async () => {
     if (!title.trim()) return alert('제목을 입력해주세요')
-    setLoading(true)
+    setSaveStatus('준비 중...')
     try {
       const photoURLs = []
-      for (const photo of photos) {
-        const storageRef = ref(storage, `records/${user.uid}/${Date.now()}_${photo.name}`)
-        await uploadBytes(storageRef, photo)
+      for (let i = 0; i < photos.length; i++) {
+        setSaveStatus(`사진 ${i + 1}/${photos.length} 업로드 중...`)
+        const storageRef = ref(storage, `records/${user.uid}/${Date.now()}_${photos[i].name}`)
+        await uploadBytes(storageRef, photos[i])
         photoURLs.push(await getDownloadURL(storageRef))
       }
+      setSaveStatus('저장 중...')
+      const [y, m, d] = travelDate.split('-').map(Number)
+      const personalRef = doc(collection(db, 'users', user.uid, 'records'))
       const recordData = {
         regionNum, regionName: regionInfo?.name || '알 수 없는 지역',
         title, content,
         photoURL: photoURLs[0] || null,
         photoURLs,
-        authorUid: user.uid, createdAt: new Date(),
+        travelDate: new Date(y, m - 1, d, 12, 0, 0),
+        authorUid: user.uid,
+        authorNickname: profile?.nickname || '여행자',
+        personalRecordId: personalRef.id,
+        createdAt: new Date(),
       }
-      const personalRef = doc(collection(db, 'users', user.uid, 'records'))
       await setDoc(personalRef, recordData)
       if (profile?.teamId) {
         const teamRef = doc(collection(db, 'teams', profile.teamId, 'records'))
         await setDoc(teamRef, recordData)
       }
-      navigate('/')
+      setSaveStatus('저장됨 ✓')
+      setTimeout(() => navigate('/'), 700)
     } catch (err) {
       console.error(err)
+      setSaveStatus('')
       alert('저장에 실패했어요')
     }
-    setLoading(false)
   }
 
   return (
     <div style={{
       position: 'fixed', top: 0, bottom: 0,
-      left: 'max(0px, calc(50vw - 215px))',
-      right: 'max(0px, calc(50vw - 215px))',
+      left: 0, right: 0,
       background: '#FFFDF8', overflowY: 'auto',
       WebkitOverflowScrolling: 'touch',
     }}>
-      {/* 항상 마운트된 단일 file input — iOS 갤러리 닫힘 버그 방지 */}
       <input
         ref={fileInputRef}
         type="file"
@@ -153,6 +165,17 @@ export default function RecordPage({ user, regionNum }) {
           </div>
         )}
 
+        {/* 여행 날짜 */}
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 12, color: '#B0B0B0', marginBottom: 5 }}>여행 날짜</p>
+          <input
+            type="date"
+            value={travelDate}
+            onChange={e => setTravelDate(e.target.value)}
+            style={{ ...inputStyle, marginBottom: 0 }}
+          />
+        </div>
+
         <input
           placeholder="제목을 입력해 주세요"
           value={title} onChange={e => setTitle(e.target.value)}
@@ -165,14 +188,15 @@ export default function RecordPage({ user, regionNum }) {
           style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16 }}
         />
 
-        <button onClick={handleSubmit} disabled={loading} style={{
+        <button onClick={handleSubmit} disabled={!!saveStatus} style={{
           width: '100%', padding: '15px', borderRadius: 18,
-          background: loading ? '#FFB3C6' : 'linear-gradient(135deg, #FF7BA9, #FF5499)',
+          background: saveStatus ? (saveStatus === '저장됨 ✓' ? '#4CAF50' : '#FFB3C6') : 'linear-gradient(135deg, #FF7BA9, #FF5499)',
           color: 'white', fontSize: 15, fontWeight: 700,
           marginTop: 4, letterSpacing: '-0.2px',
-          boxShadow: loading ? 'none' : '0 4px 16px rgba(255,123,169,0.35)',
+          boxShadow: saveStatus ? 'none' : '0 4px 16px rgba(255,123,169,0.35)',
+          transition: 'background 0.3s',
         }}>
-          {loading ? '저장 중...' : '기록 저장하기 🐥'}
+          {saveStatus || '기록 저장하기 🐥'}
         </button>
 
       </div>
