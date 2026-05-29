@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, arrayRemove } from 'firebase/firestore'
+import { doc, getDoc, updateDoc, deleteDoc, getDocs, collection, arrayRemove, query, where } from 'firebase/firestore'
 import { updatePassword, deleteUser, reauthenticateWithCredential, EmailAuthProvider, OAuthProvider } from 'firebase/auth'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { auth, db, storage } from '../firebase'
@@ -56,6 +56,18 @@ export default function EditProfilePage({ user }) {
       const updates = { photoURL }
       if (nickname !== profile?.nickname) updates.nickname = nickname
       await updateDoc(doc(db, 'users', user.uid), updates)
+
+      // 모든 기록에 닉네임/프로필사진 반영
+      const recordUpdate = { authorNickname: nickname || profile?.nickname || '여행자', authorPhotoURL: photoURL }
+      const personalSnap = await getDocs(collection(db, 'users', user.uid, 'records'))
+      await Promise.all(personalSnap.docs.map(d => updateDoc(d.ref, recordUpdate)))
+      if (profile?.teamId) {
+        const teamSnap = await getDocs(query(
+          collection(db, 'teams', profile.teamId, 'records'),
+          where('authorUid', '==', user.uid)
+        ))
+        await Promise.all(teamSnap.docs.map(d => updateDoc(d.ref, recordUpdate)))
+      }
 
       // 비밀번호 변경 (이메일 유저만)
       if (!isOAuthUser && newPassword) {

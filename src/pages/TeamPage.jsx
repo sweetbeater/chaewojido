@@ -159,7 +159,7 @@ export default function TeamPage({ user, onSelectRecord }) {
   const saveTeamName = async () => {
     const name = newTeamName.trim()
     if (!name || name === teamData.name) { setEditingName(false); return }
-    await updateDoc(doc(db, 'teams', profile.teamId), { name, nameChanged: true })
+    await updateDoc(doc(db, 'teams', profile.teamId), { name })
     setEditingName(false)
   }
 
@@ -245,16 +245,12 @@ export default function TeamPage({ user, onSelectRecord }) {
           ) : (
             <>
               <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333' }}>{teamData.name}</h2>
-              {!teamData.nameChanged ? (
-                <button
-                  onClick={() => { setNewTeamName(teamData.name); setEditingName(true) }}
-                  style={{ padding: '4px 10px', borderRadius: 10, background: '#FFE8EF', color: '#FF8FAB', fontSize: 13, fontWeight: 600 }}
-                >
-                  이름 변경
-                </button>
-              ) : (
-                <span style={{ fontSize: 13, color: '#C0C0C0' }}>(변경 완료)</span>
-              )}
+              <button
+                onClick={() => { setNewTeamName(teamData.name); setEditingName(true) }}
+                style={{ padding: '4px 10px', borderRadius: 10, background: '#FFE8EF', color: '#FF8FAB', fontSize: 13, fontWeight: 600 }}
+              >
+                이름 변경
+              </button>
             </>
           )}
         </div>

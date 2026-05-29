@@ -209,5 +209,5 @@ const inputStyle = {
   borderRadius: 16, border: '1.5px solid #FFD6E0',
   fontSize: 14, outline: 'none', background: 'white',
   marginBottom: 12, display: 'block', letterSpacing: '-0.1px',
-  fontFamily: 'inherit',
+  fontFamily: 'inherit', boxSizing: 'border-box',
 }

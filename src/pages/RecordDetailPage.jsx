@@ -28,6 +28,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const [newComment, setNewComment] = useState('')
   const [profile, setProfile] = useState(null)
   const [commentsLoading, setCommentsLoading] = useState(true)
+  const [memberProfiles, setMemberProfiles] = useState({})
   const [editing, setEditing] = useState(false)
   const [fullscreenPhoto, setFullscreenPhoto] = useState(null)
   const [editTitle, setEditTitle] = useState('')
@@ -47,6 +48,19 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
       if (snap.exists()) setProfile(snap.data())
     })
   }, [user])
+
+  useEffect(() => {
+    if (!teamId) return
+    getDoc(doc(db, 'teams', teamId)).then(snap => {
+      if (!snap.exists()) return
+      const members = snap.data().members || []
+      Promise.all(members.map(uid => getDoc(doc(db, 'users', uid)))).then(snaps => {
+        const profiles = {}
+        snaps.forEach(s => { if (s.exists()) profiles[s.id] = s.data() })
+        setMemberProfiles(profiles)
+      })
+    })
+  }, [teamId])
 
   useEffect(() => {
     if (!recordId) return
@@ -95,6 +109,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
       text: newComment,
       authorUid: user.uid,
       authorNickname: profile?.nickname || '여행자',
+      authorPhotoURL: profile?.photoURL || null,
       createdAt: new Date(),
     })
     setNewComment('')
@@ -290,8 +305,8 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         ) : (
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
             {editExistingURLs.map((url, idx) => (
-              <div key={`ex-${idx}`} style={{ position: 'relative', flexShrink: 0 }}>
-                <img src={url} alt="" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 14 }} />
+              <div key={`ex-${idx}`} style={{ position: 'relative', flexShrink: 0, width: 120, height: 120, borderRadius: 14, overflow: 'hidden', background: '#F0F0F0' }}>
+                <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', WebkitBackfaceVisibility: 'hidden' }} />
                 <button
                   onClick={() => setEditExistingURLs(prev => prev.filter((_, i) => i !== idx))}
                   style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,0.5)', color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -465,25 +480,36 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
             <p style={{ fontSize: 13, color: '#aaa', marginBottom: 16 }}>첫 댓글을 남겨보세요 😊</p>
           ) : (
             <div style={{ marginBottom: 16 }}>
-              {comments.map(comment => (
-                <div key={comment.id} style={{ padding: '10px 0', borderBottom: '1px solid #FFF0F5' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#FF7BA9', marginBottom: 2 }}>{comment.authorNickname}</p>
-                      <p style={{ fontSize: 13, color: '#555' }}>{comment.text}</p>
-                      <p style={{ fontSize: 13, color: '#ccc', marginTop: 4 }}>
-                        {comment.createdAt?.toDate?.().toLocaleDateString('ko-KR') || ''}
-                      </p>
+              {comments.map(comment => {
+                const authorProfile = memberProfiles[comment.authorUid]
+                const displayName = authorProfile?.nickname || comment.authorNickname || '여행자'
+                const displayPhoto = authorProfile?.photoURL || comment.authorPhotoURL
+                return (
+                  <div key={comment.id} style={{ padding: '10px 0', borderBottom: '1px solid #FFF0F5' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          {displayPhoto
+                            ? <img src={displayPhoto} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                            : <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FFD6E0', flexShrink: 0 }} />
+                          }
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#FF7BA9' }}>{displayName}</p>
+                        </div>
+                        <p style={{ fontSize: 13, color: '#555' }}>{comment.text}</p>
+                        <p style={{ fontSize: 13, color: '#ccc', marginTop: 4 }}>
+                          {comment.createdAt?.toDate?.().toLocaleDateString('ko-KR') || ''}
+                        </p>
+                      </div>
+                      {comment.authorUid === user?.uid && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          style={{ padding: '4px 8px', fontSize: 12, color: '#FF6B6B', background: 'none', flexShrink: 0, marginLeft: 8 }}
+                        >삭제</button>
+                      )}
                     </div>
-                    {comment.authorUid === user?.uid && (
-                      <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        style={{ padding: '4px 8px', fontSize: 12, color: '#FF6B6B', background: 'none', flexShrink: 0, marginLeft: 8 }}
-                      >삭제</button>
-                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
           <div style={{ display: 'flex', gap: 8 }}>
@@ -511,6 +537,7 @@ const inputStyle = {
   borderRadius: 14, border: '1.5px solid #FFD6E0',
   fontSize: 14, outline: 'none', background: 'white',
   marginBottom: 12, display: 'block', fontFamily: 'inherit',
+  boxSizing: 'border-box',
 }
 
 const actionBtn = {
