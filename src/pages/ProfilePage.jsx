@@ -137,10 +137,10 @@ export default function ProfilePage({ user }) {
             style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover', border: '3px solid #FFD6E0', flexShrink: 0 }}
           />
           <div style={{ minWidth: 0, overflow: 'hidden' }}>
-            <p style={{ fontSize: 19, fontWeight: 800, color: '#2D2D2D', letterSpacing: '-0.3px' }}>
+            <p style={{ fontSize: 19, fontWeight: 800, color: '#2D2D2D', letterSpacing: '-0.3px', fontFamily: "'Nanum Square Round', sans-serif" }}>
               {profile?.nickname || '여행자'}
             </p>
-            <p style={{ fontSize: 13, color: '#B0B0B0', marginTop: 2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            <p style={{ fontSize: 13, color: '#B0B0B0', marginTop: 2, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontFamily: "'Nanum Square Round', sans-serif" }}>
               {user?.isAnonymous ? '게스트 모드' : user?.email}
             </p>
           </div>

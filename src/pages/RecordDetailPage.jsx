@@ -350,8 +350,8 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
             />
           </div>
         </div>
-        <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="제목" style={{ ...inputStyle, fontSize: 18 }} />
-        <textarea value={editContent} onChange={e => setEditContent(e.target.value)} placeholder="내용" rows={5} style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16 }} />
+        <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="제목" style={{ ...inputStyle, fontSize: 18, fontFamily: "'Gowun Dodum', sans-serif" }} />
+        <textarea value={editContent} onChange={e => setEditContent(e.target.value)} placeholder="내용" rows={5} style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16, fontFamily: "'Gowun Dodum', sans-serif" }} />
         <button onClick={handleEditSave} disabled={!!editSaveStatus} style={{
           width: '100%', padding: '14px', borderRadius: 16,
           background: editSaveStatus === '저장됨 ✓' ? '#4CAF50' : editSaveStatus ? '#FFB3C6' : 'linear-gradient(135deg, #FF7BA9, #FF5499)',
@@ -447,11 +447,11 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         <p style={{ fontSize: 13, color: '#FF7BA9', marginBottom: 8, fontWeight: 600, letterSpacing: '0.2px' }}>
           📍 {record.regionName}
         </p>
-        <p style={{ fontSize: 24, fontWeight: 700, color: '#2D2D2D', marginBottom: 12, lineHeight: 1.4 }}>
+        <p style={{ fontSize: 24, fontWeight: 700, color: '#2D2D2D', marginBottom: 12, lineHeight: 1.4, fontFamily: "'Gowun Dodum', sans-serif" }}>
           {record.title}
         </p>
         {record.content && (
-          <p style={{ fontSize: 17, color: '#555', lineHeight: 2.0, marginBottom: 14 }}>
+          <p style={{ fontSize: 17, color: '#555', lineHeight: 2.0, marginBottom: 14, fontFamily: "'Gowun Dodum', sans-serif" }}>
             {record.content}
           </p>
         )}
@@ -504,7 +504,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                           }
                           <p style={{ fontSize: 13, fontWeight: 700, color: '#FF7BA9' }}>{displayName}</p>
                         </div>
-                        <p style={{ fontSize: 13, color: '#555' }}>{comment.text}</p>
+                        <p style={{ fontSize: 13, color: '#555', fontFamily: "'Nanum Square Round', sans-serif" }}>{comment.text}</p>
                         <p style={{ fontSize: 13, color: '#ccc', marginTop: 4 }}>
                           {comment.createdAt?.toDate?.().toLocaleDateString('ko-KR') || ''}
                         </p>
@@ -527,7 +527,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
               value={newComment}
               onChange={e => setNewComment(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleComment()}
-              style={{ flex: 1, padding: '10px 14px', borderRadius: 14, border: '1.5px solid #FFD6E0', fontSize: 13, outline: 'none', background: 'white' }}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: 14, border: '1.5px solid #FFD6E0', fontSize: 13, outline: 'none', background: 'white', fontFamily: "'Nanum Square Round', sans-serif" }}
             />
             <button onClick={handleComment} style={{
               padding: '10px 18px', borderRadius: 14,

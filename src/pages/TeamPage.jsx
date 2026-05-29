@@ -247,7 +247,7 @@ export default function TeamPage({ user, onSelectRecord }) {
             </>
           ) : (
             <>
-              <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333' }}>{teamData.name}</h2>
+              <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333', fontFamily: "'Gowun Dodum', sans-serif" }}>{teamData.name}</h2>
               <button
                 onClick={() => { setNewTeamName(teamData.name); setEditingName(true) }}
                 style={{ padding: '4px 10px', borderRadius: 10, background: '#FFE8EF', color: '#FF8FAB', fontSize: 13, fontWeight: 600 }}
@@ -275,9 +275,9 @@ export default function TeamPage({ user, onSelectRecord }) {
                   style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', border: '2px solid #FFD6E0', flexShrink: 0 }}
                 />
                 <div>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D' }}>
+                  <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', fontFamily: "'Gowun Dodum', sans-serif" }}>
                     {mp?.nickname || '여행자'}
-                    {uid === user.uid && <span style={{ fontSize: 12, color: '#FF8FAB', marginLeft: 6 }}>나</span>}
+                    {uid === user.uid && <span style={{ fontSize: 12, color: '#FF8FAB', marginLeft: 6, fontFamily: "'NeoDGM', sans-serif" }}>나</span>}
                   </p>
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function TeamPage({ user, onSelectRecord }) {
                         <p style={{ fontSize: 13, color: '#FF7BA9', fontWeight: 600, marginBottom: 3 }}>
                           📍 {record.regionName}
                         </p>
-                        <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 3 }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 3, fontFamily: "'Gowun Dodum', sans-serif" }}>
                           {record.title}
                         </p>
                         <p style={{ fontSize: 12, color: '#B0B0B0' }}>
@@ -369,7 +369,7 @@ export default function TeamPage({ user, onSelectRecord }) {
         {/* 초대 코드 */}
         <div style={{ ...cardStyle, marginTop: 24 }}>
           <p style={{ fontSize: 13, color: '#aaa', marginBottom: 8 }}>초대 코드</p>
-          <p style={{ fontSize: 32, fontWeight: 'bold', color: '#FF8FAB', letterSpacing: 6 }}>
+          <p style={{ fontSize: 32, fontWeight: 'bold', color: '#FF8FAB', letterSpacing: 6, fontFamily: "'Nanum Square Round', sans-serif" }}>
             {teamData.code}
           </p>
         </div>
@@ -471,6 +471,7 @@ const inputStyle = {
   background: 'white',
   marginBottom: 12,
   display: 'block',
+  fontFamily: "'Nanum Square Round', sans-serif",
 }
 
 const btnStyle = {

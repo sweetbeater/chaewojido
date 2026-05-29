@@ -173,6 +173,7 @@ const inputStyle = {
   outline: 'none',
   background: 'white',
   width: '100%',
+  fontFamily: "'Nanum Square Round', sans-serif",
 }
 
 const btnStyle = {

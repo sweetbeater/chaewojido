@@ -199,13 +199,13 @@ export default function RecordPage({ user, regionNum }) {
         <input
           placeholder="제목을 입력해 주세요"
           value={title} onChange={e => setTitle(e.target.value)}
-          style={{ ...inputStyle, fontSize: 18 }}
+          style={{ ...inputStyle, fontSize: 18, fontFamily: "'Gowun Dodum', sans-serif" }}
         />
         <textarea
           placeholder="여행의 기억을 기록해보세요 🗺️"
           value={content} onChange={e => setContent(e.target.value)}
           rows={6}
-          style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16 }}
+          style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16, fontFamily: "'Gowun Dodum', sans-serif" }}
         />
 
         <button onClick={handleSubmit} disabled={!!saveStatus} style={{

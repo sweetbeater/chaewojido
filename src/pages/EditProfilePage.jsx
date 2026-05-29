@@ -286,7 +286,7 @@ const inputStyle = {
   outline: 'none',
   background: 'white',
   display: 'block',
-  fontFamily: 'inherit',
+  fontFamily: "'Nanum Square Round', sans-serif",
 }
 
 const btnStyle = {

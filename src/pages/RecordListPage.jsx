@@ -135,11 +135,11 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
                       {formatTravelDate(record)} 여행 기록
                     </p>
                   )}
-                  <p style={{ fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 6 }}>
+                  <p style={{ fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 6, fontFamily: "'Gowun Dodum', sans-serif" }}>
                     {record.title}
                   </p>
                   {record.content && (
-                    <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 8 }}>
+                    <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 8, fontFamily: "'Gowun Dodum', sans-serif" }}>
                       {record.content}
                     </p>
                   )}

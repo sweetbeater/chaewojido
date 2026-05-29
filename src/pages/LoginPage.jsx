@@ -143,7 +143,7 @@ export default function LoginPage() {
         </div>
 
         <h1 style={{
-          fontFamily: "'NeoDGM', sans-serif",
+          fontFamily: "'Gowun Dodum', sans-serif",
           fontSize: 38,
           fontWeight: 400,
           color: 'white',
@@ -154,6 +154,7 @@ export default function LoginPage() {
           채워지도
         </h1>
         <p style={{
+          fontFamily: "'Gowun Dodum', sans-serif",
           fontSize: 13,
           color: 'rgba(255,255,255,0.75)',
           letterSpacing: '0.3px',
@@ -170,6 +171,7 @@ export default function LoginPage() {
         padding: `32px 28px calc(env(safe-area-inset-bottom, 0px) + 28px)`,
         boxShadow: '0 -6px 32px rgba(0,0,0,0.12)',
         position: 'relative', zIndex: 1,
+        fontFamily: "'Nanum Square Round', sans-serif",
       }}>
         {showReset ? (
           /* 비밀번호 재설정 섹션 */
@@ -310,6 +312,7 @@ const inputStyle = {
   border: '1.5px solid #FFD6E0', fontSize: 14,
   outline: 'none', background: 'white', width: '100%',
   letterSpacing: '-0.1px',
+  fontFamily: "'Nanum Square Round', sans-serif",
 }
 
 const primaryBtn = {
