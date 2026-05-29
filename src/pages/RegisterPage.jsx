@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { createUserWithEmailAndPassword, EmailAuthProvider, linkWithCredential } from 'firebase/auth'
+import { createUserWithEmailAndPassword, EmailAuthProvider, linkWithCredential, GoogleAuthProvider, signInWithCredential, OAuthProvider } from 'firebase/auth'
 import { doc, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication'
+
+const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
 
 function getGuestRegions() {
   try { return JSON.parse(localStorage.getItem('guestVisitedRegions') || '[]') } catch { return [] }
@@ -15,6 +18,36 @@ export default function RegisterPage() {
   const [nickname, setNickname] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
+
+  const handleGoogle = async () => {
+    try {
+      const result = await FirebaseAuthentication.signInWithGoogle()
+      const credential = GoogleAuthProvider.credential(
+        result.credential?.idToken,
+        result.credential?.accessToken,
+      )
+      await signInWithCredential(auth, credential)
+      navigate('/')
+    } catch (err) {
+      if (err.code !== 'SIGN_IN_CANCELLED') setError('구글 로그인에 실패했어요')
+    }
+  }
+
+  const handleApple = async () => {
+    try {
+      const result = await FirebaseAuthentication.signInWithApple()
+      const credential = new OAuthProvider('apple.com').credential({
+        idToken: result.credential?.idToken,
+        rawNonce: result.credential?.nonce,
+      })
+      await signInWithCredential(auth, credential)
+      navigate('/')
+    } catch (err) {
+      const cancelled = err.code === 'SIGN_IN_CANCELLED' ||
+        (typeof err.message === 'string' && err.message.toLowerCase().includes('cancel'))
+      if (!cancelled) setError('애플 로그인에 실패했어요')
+    }
+  }
 
   const handleRegister = async (e) => {
     e.preventDefault()
@@ -65,6 +98,23 @@ export default function RegisterPage() {
     }}>
       <img src="/도트삐야_아이콘.png" alt="삐야" style={{ width: 80, marginBottom: 8 }} />
       <h1 style={{ fontSize: 24, fontWeight: 800, color: '#FF8FAB', marginBottom: 24, letterSpacing: '-0.5px' }}>이메일 회원가입</h1>
+
+      <button onClick={handleGoogle} style={{ ...oauthBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <GoogleIcon />
+        구글로 시작하기
+      </button>
+      {isNative && (
+        <button onClick={handleApple} style={{ ...oauthBtn, marginTop: 10, background: '#000', color: '#fff', borderColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <AppleIcon />
+          Apple로 시작하기
+        </button>
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '16px 0 4px', width: '100%' }}>
+        <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
+        <span style={{ fontSize: 13, color: '#C0C0C0' }}>또는 이메일로 가입</span>
+        <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
+      </div>
 
       <form onSubmit={handleRegister} style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <input
@@ -133,4 +183,29 @@ const btnStyle = {
   fontSize: 16,
   fontWeight: 'bold',
   marginTop: 4,
+}
+
+const oauthBtn = {
+  width: '100%', padding: '13px', borderRadius: 16,
+  background: 'white', border: '1.5px solid #FFD6E0',
+  color: '#2D2D2D', fontSize: 14, fontWeight: 600,
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"/>
+      <path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.548 0 9s.348 2.825.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+  )
+}
+
+function AppleIcon() {
+  return (
+    <svg width="15" height="18" viewBox="0 0 15 18" fill="white" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.42 9.6c-.01-1.59.84-2.99 2.08-3.79-.81-1.16-2.07-1.86-3.48-1.89-1.48-.14-2.9.87-3.65.87-.76 0-1.92-.85-3.16-.83C2.21 4.01.5 5.17.5 7.84c0 3.44 2.3 8.68 4.81 8.68 1.22.01 1.7-.79 3.17-.79 1.46 0 1.91.79 3.18.77 2.1-.03 3.57-3.97 3.84-5.4-1.55-.65-3.08-2.05-3.08-3.5zM9.56 2.56C10.37 1.57 10.85.34 10.75 0 9.6.05 8.27.77 7.43 1.79c-.76.92-1.28 2.18-1.16 3.46 1.24.1 2.5-.61 3.29-2.69z"/>
+    </svg>
+  )
 }

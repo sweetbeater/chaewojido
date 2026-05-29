@@ -17,7 +17,8 @@ export default function RecordPage({ user, regionNum }) {
   const [content, setContent] = useState('')
   const [photos, setPhotos] = useState([])
   const [previews, setPreviews] = useState([])
-  const [travelDate, setTravelDate] = useState(todayString)
+  const [travelStartDate, setTravelStartDate] = useState(todayString)
+  const [travelEndDate, setTravelEndDate] = useState(todayString)
   const [saveStatus, setSaveStatus] = useState('')
   const [profile, setProfile] = useState(null)
   const fileInputRef = useRef(null)
@@ -57,13 +58,16 @@ export default function RecordPage({ user, regionNum }) {
         photoURLs.push(await getDownloadURL(storageRef))
       }
       setSaveStatus('저장 중...')
-      const [y, m, d] = travelDate.split('-').map(Number)
+      if (travelEndDate < travelStartDate) return alert('종료일은 시작일보다 빠를 수 없어요')
+      const [sy, sm, sd] = travelStartDate.split('-').map(Number)
+      const [ey, em, ed] = travelEndDate.split('-').map(Number)
       const recordData = {
         regionNum, regionName: regionInfo?.name || '알 수 없는 지역',
         title, content,
         photoURL: photoURLs[0] || null,
         photoURLs,
-        travelDate: new Date(y, m - 1, d, 12, 0, 0),
+        travelStartDate: new Date(sy, sm - 1, sd, 12, 0, 0),
+        travelEndDate: new Date(ey, em - 1, ed, 12, 0, 0),
         authorUid: user.uid,
         authorNickname: profile?.nickname || '여행자',
         authorPhotoURL: profile?.photoURL || null,
@@ -171,12 +175,25 @@ export default function RecordPage({ user, regionNum }) {
         {/* 여행 날짜 */}
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 12, color: '#B0B0B0', marginBottom: 5 }}>여행 날짜</p>
-          <input
-            type="date"
-            value={travelDate}
-            onChange={e => setTravelDate(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 0 }}
-          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="date"
+              value={travelStartDate}
+              onChange={e => {
+                setTravelStartDate(e.target.value)
+                if (travelEndDate < e.target.value) setTravelEndDate(e.target.value)
+              }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+            />
+            <span style={{ color: '#B0B0B0', fontSize: 13, flexShrink: 0 }}>~</span>
+            <input
+              type="date"
+              value={travelEndDate}
+              min={travelStartDate}
+              onChange={e => setTravelEndDate(e.target.value)}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+            />
+          </div>
         </div>
 
         <input

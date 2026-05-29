@@ -38,6 +38,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const [editExistingURLs, setEditExistingURLs] = useState([])
   const [editSaveStatus, setEditSaveStatus] = useState('')
   const [editTravelDate, setEditTravelDate] = useState('')
+  const [editTravelEndDate, setEditTravelEndDate] = useState('')
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
   const { confirm, modal } = useConfirm()
@@ -148,11 +149,11 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     setEditExistingURLs(existingURLs)
     setEditPhotos([])
     setEditPreviews([])
-    const travelDateObj = record.travelDate?.toDate?.() || record.createdAt?.toDate?.() || new Date()
-    const y = travelDateObj.getFullYear()
-    const m = String(travelDateObj.getMonth() + 1).padStart(2, '0')
-    const d = String(travelDateObj.getDate()).padStart(2, '0')
-    setEditTravelDate(`${y}-${m}-${d}`)
+    const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    const startObj = record.travelStartDate?.toDate?.() || record.travelDate?.toDate?.() || record.createdAt?.toDate?.() || new Date()
+    const endObj = record.travelEndDate?.toDate?.() || startObj
+    setEditTravelDate(fmt(startObj))
+    setEditTravelEndDate(fmt(endObj))
     setEditing(true)
   }
 
@@ -169,7 +170,9 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
       }
       setEditSaveStatus('저장 중...')
       const allPhotoURLs = [...editExistingURLs, ...newURLs]
-      const [y, m, d] = editTravelDate.split('-').map(Number)
+      if (editTravelEndDate < editTravelDate) return alert('종료일은 시작일보다 빠를 수 없어요')
+      const [sy, sm, sd] = editTravelDate.split('-').map(Number)
+      const [ey, em, ed] = editTravelEndDate.split('-').map(Number)
       const updateRef = teamId
         ? doc(db, 'teams', teamId, 'records', recordId)
         : doc(db, 'users', user.uid, 'records', recordId)
@@ -178,7 +181,8 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         content: editContent,
         photoURL: allPhotoURLs[0] || null,
         photoURLs: allPhotoURLs,
-        travelDate: new Date(y, m - 1, d, 12, 0, 0),
+        travelStartDate: new Date(sy, sm - 1, sd, 12, 0, 0),
+        travelEndDate: new Date(ey, em - 1, ed, 12, 0, 0),
       })
       setEditSaveStatus('저장됨 ✓')
       setTimeout(() => setEditing(false), 700)
@@ -239,10 +243,15 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     <div style={{ textAlign: 'center', padding: 40, color: '#FF7BA9' }}>불러오는 중...</div>
   )
 
-  const displayDateObj = record.travelDate?.toDate?.() || record.createdAt?.toDate?.()
-  const dateStr = displayDateObj
-    ? displayDateObj.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
-    : ''
+  const travelStartObj = record.travelStartDate?.toDate?.() || record.travelDate?.toDate?.()
+  const travelEndObj = record.travelEndDate?.toDate?.()
+  const travelDateStr = (() => {
+    if (!travelStartObj) return ''
+    const fmt = d => d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })
+    if (!travelEndObj || travelStartObj.toDateString() === travelEndObj.toDateString()) return fmt(travelStartObj)
+    return `${fmt(travelStartObj)} ~ ${fmt(travelEndObj)}`
+  })()
+  const createdDateStr = record.createdAt?.toDate?.()?.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' }) || ''
 
   const isLiked = (record.likes || []).includes(user.uid)
   const photoUrls = record.photoURLs?.length ? record.photoURLs : record.photoURL ? [record.photoURL] : []
@@ -321,12 +330,25 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
 
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 12, color: '#B0B0B0', marginBottom: 5 }}>여행 날짜</p>
-          <input
-            type="date"
-            value={editTravelDate}
-            onChange={e => setEditTravelDate(e.target.value)}
-            style={{ ...inputStyle, marginBottom: 0 }}
-          />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              type="date"
+              value={editTravelDate}
+              onChange={e => {
+                setEditTravelDate(e.target.value)
+                if (editTravelEndDate < e.target.value) setEditTravelEndDate(e.target.value)
+              }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+            />
+            <span style={{ color: '#B0B0B0', fontSize: 13, flexShrink: 0 }}>~</span>
+            <input
+              type="date"
+              value={editTravelEndDate}
+              min={editTravelDate}
+              onChange={e => setEditTravelEndDate(e.target.value)}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+            />
+          </div>
         </div>
         <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="제목" style={{ ...inputStyle, fontSize: 18 }} />
         <textarea value={editContent} onChange={e => setEditContent(e.target.value)} placeholder="내용" rows={5} style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16 }} />
@@ -401,7 +423,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                   textAlign: 'right', marginTop: 10, paddingRight: 2,
                   fontSize: 14, color: '#C4B0B4',
                 }}>
-                  {dateStr}
+                  {travelDateStr}
                 </p>
               </div>
             ))}
@@ -433,8 +455,13 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
             {record.content}
           </p>
         )}
+        {travelDateStr && (
+          <p style={{ fontSize: 12, color: '#FFB3C6', marginBottom: 4 }}>
+            {travelDateStr} 여행 기록
+          </p>
+        )}
         <p style={{ fontSize: 13, color: '#C8C8C8' }}>
-          {dateStr}
+          {createdDateStr}
         </p>
       </div>
 

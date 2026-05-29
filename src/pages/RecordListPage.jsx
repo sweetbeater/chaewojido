@@ -13,6 +13,16 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
 
   const regionInfo = REGION_MAP[regionNum]
 
+  const formatTravelDate = (record) => {
+    const toDate = f => f?.toDate?.() || (f instanceof Date ? f : null)
+    const start = toDate(record.travelStartDate) || toDate(record.travelDate)
+    const end = toDate(record.travelEndDate)
+    if (!start) return null
+    const fmt = d => `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`
+    if (!end || start.toDateString() === end.toDateString()) return fmt(start)
+    return `${fmt(start)} ~ ${fmt(end)}`
+  }
+
   useEffect(() => {
     if (!user) return
     if (user.isAnonymous) {
@@ -120,6 +130,11 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
                     style={{ width: '100%', height: 180, objectFit: 'cover' }} />
                 )}
                 <div style={{ padding: '16px' }}>
+                  {formatTravelDate(record) && (
+                    <p style={{ fontSize: 12, color: '#FFB3C6', marginBottom: 4 }}>
+                      {formatTravelDate(record)} 여행 기록
+                    </p>
+                  )}
                   <p style={{ fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 6 }}>
                     {record.title}
                   </p>
