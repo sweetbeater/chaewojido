@@ -88,7 +88,7 @@ export default function RecordPage({ user, regionNum }) {
     <div style={{
       position: 'fixed', top: 0, bottom: 0,
       left: 0, right: 0,
-      background: '#FFFDF8', overflowY: 'auto',
+      background: '#FFFDF8', overflowY: 'auto', overflowX: 'hidden',
       WebkitOverflowScrolling: 'touch',
     }}>
       <input

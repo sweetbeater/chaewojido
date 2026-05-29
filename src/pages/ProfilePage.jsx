@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { doc, onSnapshot, collection, getDocs, deleteDoc, query, where } from 'firebase/firestore'
+import { doc, onSnapshot, collection, getDocs } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { auth, db, requestNotificationPermission, disableNotifications } from '../firebase'
 import { useNavigate } from 'react-router-dom'
@@ -12,8 +12,6 @@ export default function ProfilePage({ user }) {
   const [teamData, setTeamData] = useState(null)
   const [records, setRecords] = useState([])
   const [notifWorking, setNotifWorking] = useState(false)
-  const [cleanupLoading, setCleanupLoading] = useState(false)
-  const [cleanupMsg, setCleanupMsg] = useState('')
   const [nativePermDenied, setNativePermDenied] = useState(false)
   const [selectedBadge, setSelectedBadge] = useState(null)
   const navigate = useNavigate()
@@ -70,31 +68,6 @@ export default function ProfilePage({ user }) {
     ...BADGES.filter(b => earnedIds.has(b.id)),
     ...BADGES.filter(b => !earnedIds.has(b.id)),
   ]
-
-  const handleCleanupDuplicates = async () => {
-    if (!profile?.teamId) return
-    setCleanupLoading(true)
-    try {
-      const personalSnap = await getDocs(collection(db, 'users', user.uid, 'records'))
-      const personalIds = new Set(personalSnap.docs.map(d => d.id))
-      const teamSnap = await getDocs(query(
-        collection(db, 'teams', profile.teamId, 'records'),
-        where('authorUid', '==', user.uid)
-      ))
-      const toDelete = teamSnap.docs.filter(d => {
-        const data = d.data()
-        return data.personalRecordId && !personalIds.has(data.personalRecordId)
-      })
-      await Promise.all(toDelete.map(d => deleteDoc(d.ref)))
-      setCleanupMsg(`✅ ${toDelete.length}개 정리 완료`)
-      setTimeout(() => setCleanupMsg(''), 3000)
-    } catch (err) {
-      console.error(err)
-      setCleanupMsg('오류가 발생했어요')
-      setTimeout(() => setCleanupMsg(''), 3000)
-    }
-    setCleanupLoading(false)
-  }
 
   return (
     <div style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -297,27 +270,6 @@ export default function ProfilePage({ user }) {
         </div>
       </div>
 
-      {profile?.teamId && !user?.isAnonymous && (
-        <div style={{ textAlign: 'center', marginTop: 8 }}>
-          <button
-            onClick={handleCleanupDuplicates}
-            disabled={cleanupLoading}
-            style={{
-              padding: '8px 18px', borderRadius: 12,
-              background: '#F5F5F5', color: '#B0B0B0',
-              fontSize: 12, fontWeight: 600,
-              opacity: cleanupLoading ? 0.6 : 1,
-            }}
-          >
-            {cleanupLoading ? '정리 중...' : '🧹 중복 기록 정리'}
-          </button>
-          {cleanupMsg && (
-            <p style={{ fontSize: 12, color: cleanupMsg.startsWith('✅') ? '#4CAF50' : '#FF6B6B', marginTop: 6 }}>
-              {cleanupMsg}
-            </p>
-          )}
-        </div>
-      )}
 
     </div>
   )

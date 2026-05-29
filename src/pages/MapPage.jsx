@@ -68,6 +68,7 @@ export default function MapPage({ user, onOpenRecord }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isRemoving, setIsRemoving] = useState(false)
   const [recordCounts, setRecordCounts] = useState({})
+  const [teamRecordCounts, setTeamRecordCounts] = useState({})
   const [records, setRecords] = useState([])
   const [regionPhotos, setRegionPhotos] = useState({})
   const [teamRegionPhotos, setTeamRegionPhotos] = useState({})
@@ -108,9 +109,16 @@ export default function MapPage({ user, onOpenRecord }) {
   }, [user])
 
   useEffect(() => {
-    if (!profile?.teamId) { setTeamRegionPhotos({}); return }
+    if (!profile?.teamId) { setTeamRegionPhotos({}); setTeamRecordCounts({}); return }
     const unsub = onSnapshot(collection(db, 'teams', profile.teamId, 'records'), snap => {
       setTeamRegionPhotos(buildRegionPhotos(snap.docs))
+      const counts = {}
+      snap.docs.forEach(d => {
+        const data = d.data()
+        const regionId = SVG_TO_REGION[data.regionNum]
+        if (regionId) counts[regionId] = (counts[regionId] || 0) + 1
+      })
+      setTeamRecordCounts(counts)
     })
     return unsub
   }, [profile?.teamId])
@@ -128,8 +136,9 @@ export default function MapPage({ user, onOpenRecord }) {
     : (profile?.teamId && teamData ? teamData.visitedRegions || [] : profile?.visitedRegions || [])
 
   const dataLoaded = isGuest || (profile !== null && (!profile?.teamId || teamData !== null))
-  // 팀 모드에서는 팀 사진만, 개인 모드에서는 개인 사진만 표시
+  // 팀 모드에서는 팀 사진/기록수, 개인 모드에서는 개인 사진/기록수
   const effectiveRegionPhotos = profile?.teamId ? teamRegionPhotos : regionPhotos
+  const effectiveRecordCounts = profile?.teamId ? teamRecordCounts : recordCounts
   const hasPhotos = Object.keys(effectiveRegionPhotos).length > 0
   const completionRate = getCompletionRate(visitedRegions)
   const regionInfo = selectedRegion ? REGION_MAP[selectedRegion] : null
@@ -443,7 +452,7 @@ export default function MapPage({ user, onOpenRecord }) {
         <KoreaMap
           visitedRegions={visitedRegions}
           highlightedRegion={selectedRegion}
-          recordCounts={recordCounts}
+          recordCounts={effectiveRecordCounts}
           onRegionClick={svgNum => { closeSearch(); setSelectedRegion(svgNum) }}
           dataLoaded={dataLoaded}
           regionPhotos={effectiveRegionPhotos}

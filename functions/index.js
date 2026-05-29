@@ -5,11 +5,12 @@ const { getMessaging } = require('firebase-admin/messaging')
 
 initializeApp()
 
-const sendPush = async (messaging, token, title, body) => {
+const sendPush = async (messaging, token, title, body, data = {}) => {
   try {
     await messaging.send({
       token,
       notification: { title, body },
+      data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
       apns: {
         payload: {
           aps: { sound: 'default', badge: 1 },
@@ -54,7 +55,8 @@ exports.onTeamRecordCreated = onDocumentCreated(
       await sendPush(
         messaging, token,
         '✍️ 새 기록이 올라왔어요!',
-        `${record.authorNickname || '팀원'}님이 "${record.title}" 기록을 남겼어요`
+        `${record.authorNickname || '팀원'}님이 "${record.title}" 기록을 남겼어요`,
+        { type: 'record', recordId: event.params.recordId, teamId }
       )
     }))
   }
@@ -93,7 +95,8 @@ exports.onCommentCreated = onDocumentCreated(
     await sendPush(
       messaging, fcmToken,
       '💬 새 댓글이 달렸어요!',
-      `${comment.authorNickname}님이 댓글을 남겼어요: ${comment.text}`
+      `${comment.authorNickname}님이 댓글을 남겼어요: ${comment.text}`,
+      { type: 'comment', recordId, teamId }
     )
   }
 )
@@ -131,7 +134,8 @@ exports.onLikeAdded = onDocumentUpdated(
     await sendPush(
       messaging, fcmToken,
       '❤️ 좋아요를 받았어요!',
-      `${likerNickname}님이 "${record.title}"에 좋아요를 눌렀어요`
+      `${likerNickname}님이 "${record.title}"에 좋아요를 눌렀어요`,
+      { type: 'like', recordId: event.params.recordId, teamId: event.params.teamId }
     )
   }
 )

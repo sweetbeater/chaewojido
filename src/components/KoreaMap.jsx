@@ -43,6 +43,13 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
 
   useEffect(() => { onClickRef.current = onRegionClick; onPhotoClickRef.current = onPhotoClick; showPhotoMapRef.current = showPhotoMap })
 
+  useEffect(() => {
+    const overlay = photoOverlayRef.current
+    if (!overlay) return
+    const pe = showPhotoMap ? 'auto' : 'none'
+    for (const child of overlay.children) child.style.pointerEvents = pe
+  }, [showPhotoMap])
+
   // ── SVG 로드 ──
   useEffect(() => {
     let cancelled = false
@@ -328,7 +335,8 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       const count = recordCounts[regionId] || 0
 
       const wrap = document.createElement('div')
-      wrap.style.cssText = `position:absolute;left:${pxX - 28}px;top:${pxY - 66}px;width:56px;height:66px;pointer-events:auto;transform:scale(${(1 / curS).toFixed(4)});transform-origin:50% 100%;cursor:pointer;`
+      const wrapPE = showPhotoMapRef.current ? 'auto' : 'none'
+      wrap.style.cssText = `position:absolute;left:${pxX - 28}px;top:${pxY - 66}px;width:56px;height:66px;pointer-events:${wrapPE};transform:scale(${(1 / curS).toFixed(4)});transform-origin:50% 100%;cursor:pointer;`
       const capturedRegionId = regionId
       wrap.addEventListener('click', (e) => {
         if (!showPhotoMapRef.current) return

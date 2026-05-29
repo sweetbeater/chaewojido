@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useRef } from 'react'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
@@ -92,6 +92,116 @@ function CompleteProfileScreen({ user, onComplete }) {
   )
 }
 
+// BrowserRouter 내부에서 실행 → useNavigate 사용 가능
+function AppRouter({ user, hasTeam, showOnboarding, onOnboardingDone, recordRegion, setRecordRegion, selectedRecord, setSelectedRecord }) {
+  const navigate = useNavigate()
+  const [notification, setNotification] = useState(null)
+
+  useEffect(() => {
+    if (!user) return
+    const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
+    if (isNative) {
+      const handles = []
+      import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {
+        // 포그라운드 알림 배너
+        FirebaseMessaging.addListener('notificationReceived', (event) => {
+          setNotification({
+            title: event.notification.title,
+            body: event.notification.body,
+            data: event.notification.data || {},
+          })
+          setTimeout(() => setNotification(null), 4000)
+        }).then(h => handles.push(h))
+
+        // 알림 탭 → 화면 이동 (백그라운드/종료 상태 포함)
+        FirebaseMessaging.addListener('notificationActionPerformed', (event) => {
+          const data = event.notification?.data || {}
+          if (data.recordId && data.teamId) {
+            setSelectedRecord({ recordId: data.recordId, teamId: data.teamId })
+            navigate('/record-detail')
+          }
+        }).then(h => handles.push(h))
+      })
+      return () => { handles.forEach(h => h?.remove?.()) }
+    }
+    if (!messaging) return
+    const unsub = onMessage(messaging, (payload) => {
+      setNotification({
+        title: payload.notification?.title,
+        body: payload.notification?.body,
+        data: payload.data || {},
+      })
+      setTimeout(() => setNotification(null), 4000)
+    })
+    return unsub
+  }, [user, navigate, setSelectedRecord])
+
+  const handleNotificationClick = () => {
+    const d = notification?.data
+    if (d?.recordId && d?.teamId) {
+      setSelectedRecord({ recordId: d.recordId, teamId: d.teamId })
+      navigate('/record-detail')
+    }
+    setNotification(null)
+  }
+
+  return (
+    <>
+      {showOnboarding && <OnboardingScreen onDone={onOnboardingDone} />}
+
+      {notification && (
+        <div
+          onClick={handleNotificationClick}
+          style={{
+            position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)',
+            background: 'white', borderRadius: 16, padding: '12px 20px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)', zIndex: 9999,
+            maxWidth: 320, width: '90%',
+            display: 'flex', alignItems: 'center', gap: 12,
+            border: '1.5px solid #FFD6E0',
+            cursor: notification.data?.recordId ? 'pointer' : 'default',
+          }}
+        >
+          <TwemojiImg code="1f514" size={24} />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 'bold', color: '#333' }}>{notification.title}</p>
+            <p style={{ fontSize: 13, color: '#aaa' }}>{notification.body}</p>
+          </div>
+        </div>
+      )}
+
+      <Routes>
+        <Route path="/login" element={user && !user.isAnonymous ? <Navigate to="/" /> : <LoginPage />} />
+        <Route path="/register" element={user && !user.isAnonymous ? <Navigate to="/" /> : <RegisterPage />} />
+        <Route path="/" element={
+          <ProtectedRoute user={user}>
+            <MapPage user={user} onOpenRecord={setRecordRegion} />
+          </ProtectedRoute>
+        } />
+        <Route path="/record" element={
+          <ProtectedRoute user={user}>
+            <RecordPage user={user} regionNum={recordRegion} />
+          </ProtectedRoute>
+        } />
+        <Route path="/records" element={
+          <ProtectedRoute user={user}>
+            <RecordListPage user={user} regionNum={recordRegion} onSelectRecord={setSelectedRecord} />
+          </ProtectedRoute>
+        } />
+        <Route path="/record-detail" element={
+          <ProtectedRoute user={user}>
+            <RecordDetailPage user={user} recordId={selectedRecord?.recordId} teamId={selectedRecord?.teamId} />
+          </ProtectedRoute>
+        } />
+        <Route path="/team" element={<ProtectedRoute user={user}><TeamPage user={user} onSelectRecord={setSelectedRecord} /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute user={user}><ProfilePage user={user} /></ProtectedRoute>} />
+        <Route path="/edit-profile" element={<ProtectedRoute user={user}><EditProfilePage user={user} /></ProtectedRoute>} />
+      </Routes>
+      {user && <TabBar hasTeam={hasTeam} />}
+    </>
+  )
+}
+
 export default function App() {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -100,13 +210,10 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [recordRegion, setRecordRegion] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
-  const [notification, setNotification] = useState(null)
   const onboardingChecked = useRef(false)
 
   useEffect(() => {
-    // 안전망: 8초 안에 auth 응답 없으면 강제로 로딩 해제
     const timeout = setTimeout(() => setLoading(false), 8000)
-
     const unsub = onAuthStateChanged(auth, async (u) => {
       clearTimeout(timeout)
       let profileComplete = true
@@ -126,12 +233,8 @@ export default function App() {
       setLoading(false)
       if (u && profileComplete && !onboardingChecked.current) {
         onboardingChecked.current = true
-        if (!localStorage.getItem('onboardingDone')) {
-          setShowOnboarding(true)
-        }
-        if (!localStorage.getItem('notifDisabled')) {
-          requestNotificationPermission(u.uid)
-        }
+        if (!localStorage.getItem('onboardingDone')) setShowOnboarding(true)
+        if (!localStorage.getItem('notifDisabled')) requestNotificationPermission(u.uid)
       }
     })
     return () => { clearTimeout(timeout); unsub() }
@@ -145,34 +248,6 @@ export default function App() {
     return unsub
   }, [user])
 
-  useEffect(() => {
-    if (!user) return
-    const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
-    if (isNative) {
-      // 네이티브: @capacitor-firebase/messaging 포그라운드 리스너
-      const listenerPromise = import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) =>
-        FirebaseMessaging.addListener('notificationReceived', (event) => {
-          setNotification({
-            title: event.notification.title,
-            body: event.notification.body,
-          })
-          setTimeout(() => setNotification(null), 4000)
-        })
-      )
-      return () => { listenerPromise.then(l => l.remove()) }
-    }
-    // 웹: Firebase Web Messaging
-    if (!messaging) return
-    const unsub = onMessage(messaging, (payload) => {
-      setNotification({
-        title: payload.notification?.title,
-        body: payload.notification?.body,
-      })
-      setTimeout(() => setNotification(null), 4000)
-    })
-    return unsub
-  }, [user])
-
   const handleOnboardingDone = () => {
     localStorage.setItem('onboardingDone', 'true')
     setShowOnboarding(false)
@@ -182,9 +257,7 @@ export default function App() {
     setNeedsProfile(false)
     if (!onboardingChecked.current) {
       onboardingChecked.current = true
-      if (!localStorage.getItem('onboardingDone')) {
-        setShowOnboarding(true)
-      }
+      if (!localStorage.getItem('onboardingDone')) setShowOnboarding(true)
     }
     if (user) requestNotificationPermission(user.uid)
   }
@@ -194,71 +267,16 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      {showOnboarding && <OnboardingScreen onDone={handleOnboardingDone} />}
-
-      {notification && (
-        <div style={{
-          position: 'fixed',
-          top: 16,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'white',
-          borderRadius: 16,
-          padding: '12px 20px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-          zIndex: 9999,
-          maxWidth: 320,
-          width: '90%',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          border: '1.5px solid #FFD6E0',
-        }}>
-          <TwemojiImg code="1f514" size={24} />
-          <div>
-            <p style={{ fontSize: 13, fontWeight: 'bold', color: '#333' }}>{notification.title}</p>
-            <p style={{ fontSize: 13, color: '#aaa' }}>{notification.body}</p>
-          </div>
-        </div>
-      )}
-
-      <Routes>
-        {/* 게스트(익명) 유저는 로그인/회원가입 페이지에 접근 가능 */}
-        <Route path="/login" element={user && !user.isAnonymous ? <Navigate to="/" /> : <LoginPage />} />
-        <Route path="/register" element={user && !user.isAnonymous ? <Navigate to="/" /> : <RegisterPage />} />
-        <Route path="/" element={
-          <ProtectedRoute user={user}>
-            <MapPage user={user} onOpenRecord={setRecordRegion} />
-          </ProtectedRoute>
-        } />
-        <Route path="/record" element={
-          <ProtectedRoute user={user}>
-            <RecordPage user={user} regionNum={recordRegion} />
-          </ProtectedRoute>
-        } />
-        <Route path="/records" element={
-          <ProtectedRoute user={user}>
-            <RecordListPage
-              user={user}
-              regionNum={recordRegion}
-              onSelectRecord={setSelectedRecord}
-            />
-          </ProtectedRoute>
-        } />
-        <Route path="/record-detail" element={
-          <ProtectedRoute user={user}>
-            <RecordDetailPage
-              user={user}
-              recordId={selectedRecord?.recordId}
-              teamId={selectedRecord?.teamId}
-            />
-          </ProtectedRoute>
-        } />
-        <Route path="/team" element={<ProtectedRoute user={user}><TeamPage user={user} onSelectRecord={setSelectedRecord} /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute user={user}><ProfilePage user={user} /></ProtectedRoute>} />
-        <Route path="/edit-profile" element={<ProtectedRoute user={user}><EditProfilePage user={user} /></ProtectedRoute>} />
-      </Routes>
-      {user && <TabBar hasTeam={hasTeam} />}
+      <AppRouter
+        user={user}
+        hasTeam={hasTeam}
+        showOnboarding={showOnboarding}
+        onOnboardingDone={handleOnboardingDone}
+        recordRegion={recordRegion}
+        setRecordRegion={setRecordRegion}
+        selectedRecord={selectedRecord}
+        setSelectedRecord={setSelectedRecord}
+      />
     </BrowserRouter>
   )
 }

@@ -243,7 +243,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         position: 'fixed', top: 0, bottom: 0,
         left: 0,
         right: 0,
-        background: '#FFFDF8', overflowY: 'auto',
+        background: '#FFFDF8', overflowY: 'auto', overflowX: 'hidden',
         WebkitOverflowScrolling: 'touch',
       }}>
         <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)' }}>
