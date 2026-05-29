@@ -375,8 +375,6 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       el.setAttribute('stroke-linecap', 'round')
       el.setAttribute('vector-effect', 'non-scaling-stroke')
       if (isHighlighted) {
-        el.style.stroke = isVisited ? '#E8A000' : '#FF3D75'
-        el.style.strokeWidth = '2.5'
         el.style.filter = isVisited
           ? 'drop-shadow(0 0 5px rgba(255,188,0,0.75))'
           : 'drop-shadow(0 0 5px rgba(255,50,110,0.7))'
@@ -386,8 +384,6 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
           el.style.animation = 'regionPulse 1.4s ease-in-out infinite'
         }
       } else {
-        el.style.stroke = ''
-        el.style.strokeWidth = ''
         el.style.filter = ''
         if (regionId !== 'gyeongbuk_ulleung' && regionId !== 'dokdo') {
           el.style.animation = ''

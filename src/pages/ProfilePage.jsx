@@ -13,6 +13,7 @@ export default function ProfilePage({ user }) {
   const [records, setRecords] = useState([])
   const [notifWorking, setNotifWorking] = useState(false)
   const [nativePermDenied, setNativePermDenied] = useState(false)
+  const [selectedBadge, setSelectedBadge] = useState(null)
   const navigate = useNavigate()
 
   const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
@@ -70,6 +71,61 @@ export default function ProfilePage({ user }) {
 
   return (
     <div style={{ position: 'fixed', top: 0, bottom: 0, left: 'max(0px, calc(50vw - 215px))', right: 'max(0px, calc(50vw - 215px))', padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+
+      {/* 배지 상세 모달 */}
+      {selectedBadge && (
+        <div
+          onClick={() => setSelectedBadge(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 500,
+            background: 'rgba(0,0,0,0.65)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(160deg, #ffffff 0%, #FFF0F8 100%)',
+              borderRadius: 28, padding: '28px 24px 24px',
+              width: '82%', maxWidth: 300, textAlign: 'center',
+              boxShadow: '0 24px 60px rgba(255,123,169,0.28)',
+              border: '1.5px solid rgba(255,214,224,0.9)',
+              position: 'relative',
+            }}
+          >
+            <button
+              onClick={() => setSelectedBadge(null)}
+              style={{
+                position: 'absolute', top: 14, right: 14,
+                width: 28, height: 28, borderRadius: 14,
+                background: '#F0F0F0', color: '#888', fontSize: 14,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >✕</button>
+            <div style={{ marginBottom: 14 }}>
+              {earnedIds.has(selectedBadge.id)
+                ? <TwemojiImg code={selectedBadge.icon} size={64} />
+                : <span style={{ fontSize: 48, opacity: 0.22, lineHeight: 1 }}>?</span>
+              }
+            </div>
+            <p style={{ fontSize: 18, fontWeight: 800, color: '#2D2D2D', marginBottom: 6 }}>
+              {selectedBadge.name}
+            </p>
+            <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 14 }}>
+              {selectedBadge.description}
+            </p>
+            {earnedIds.has(selectedBadge.id) ? (
+              <div style={{ padding: '8px 16px', borderRadius: 20, background: '#FFE8EF', display: 'inline-block' }}>
+                <span style={{ fontSize: 12, color: '#FF7BA9', fontWeight: 700 }}>✅ 획득 완료</span>
+              </div>
+            ) : (
+              <div style={{ padding: '8px 16px', borderRadius: 20, background: '#F5F5F5', display: 'inline-block' }}>
+                <span style={{ fontSize: 12, color: '#B0B0B0', fontWeight: 700 }}>🔒 미획득</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 프로필 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
@@ -182,7 +238,7 @@ export default function ProfilePage({ user }) {
           {sortedBadges.map(badge => {
             const earned = earnedIds.has(badge.id)
             return (
-              <div key={badge.id} style={{
+              <div key={badge.id} onClick={() => setSelectedBadge(badge)} style={{ cursor: 'pointer',
                 background: earned ? 'white' : '#F5F5F5',
                 borderRadius: 14,
                 padding: '12px 6px',
