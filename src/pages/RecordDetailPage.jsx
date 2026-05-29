@@ -502,7 +502,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                             ? <img src={displayPhoto} alt="" style={{ width: 20, height: 20, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                             : <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FFD6E0', flexShrink: 0 }} />
                           }
-                          <p style={{ fontSize: 13, fontWeight: 700, color: '#FF7BA9' }}>{displayName}</p>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#FF7BA9', fontFamily: "'Gowun Dodum', sans-serif" }}>{displayName}</p>
                         </div>
                         <p style={{ fontSize: 13, color: '#555', fontFamily: "'Nanum Square Round', sans-serif" }}>{comment.text}</p>
                         <p style={{ fontSize: 13, color: '#ccc', marginTop: 4 }}>

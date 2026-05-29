@@ -185,7 +185,7 @@ export default function TeamPage({ user, onSelectRecord }) {
         <p style={{ fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 8 }}>
           팀 기능은 회원만 사용할 수 있어요
         </p>
-        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 32, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 13, color: '#aaa', marginBottom: 32, lineHeight: 1.6, fontFamily: "'Nanum Square Round', sans-serif" }}>
           게스트 모드에서는 팀 연결이 불가능해요.{'\n'}
           회원가입 후 팀을 만들어보세요!
         </p>
@@ -397,7 +397,7 @@ export default function TeamPage({ user, onSelectRecord }) {
         {modal}
         <button onClick={() => setMode('main')} style={{ background: 'none', fontSize: 20, marginBottom: 16 }}>←</button>
         <h2 style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 8 }}>팀 만들기</h2>
-        <p style={{ fontSize: 13, color: '#B0B0B0', marginBottom: 24, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 13, color: '#B0B0B0', marginBottom: 24, lineHeight: 1.6, fontFamily: "'Nanum Square Round', sans-serif" }}>
           팀원들과 함께 지도를 채워보세요! 팀에 참여하면 팀 지도로 함께 시작해요.
         </p>
         <input
@@ -417,7 +417,7 @@ export default function TeamPage({ user, onSelectRecord }) {
         {modal}
         <button onClick={() => setMode('main')} style={{ background: 'none', fontSize: 20, marginBottom: 16 }}>←</button>
         <h2 style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 8 }}>팀 참여하기</h2>
-        <p style={{ fontSize: 13, color: '#B0B0B0', marginBottom: 24, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 13, color: '#B0B0B0', marginBottom: 24, lineHeight: 1.6, fontFamily: "'Nanum Square Round', sans-serif" }}>
           초대 코드를 입력해서 팀에 참여하세요. 팀이 색칠해놓은 지도부터 함께 시작해요!
         </p>
         <input

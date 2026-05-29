@@ -112,7 +112,7 @@ export default function ProfilePage({ user }) {
               {selectedBadge.name}
             </p>
             {earnedIds.has(selectedBadge.id) && (
-              <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 14 }}>
+              <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 14, fontFamily: "'Nanum Square Round', sans-serif" }}>
                 {selectedBadge.description}
               </p>
             )}

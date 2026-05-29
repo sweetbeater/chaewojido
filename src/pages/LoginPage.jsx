@@ -143,7 +143,7 @@ export default function LoginPage() {
         </div>
 
         <h1 style={{
-          fontFamily: "'Gowun Dodum', sans-serif",
+          fontFamily: "'NeoDGM', sans-serif",
           fontSize: 38,
           fontWeight: 400,
           color: 'white',

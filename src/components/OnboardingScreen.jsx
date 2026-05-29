@@ -43,10 +43,10 @@ export default function OnboardingScreen({ onDone }) {
         <img src="/도트삐야_아이콘.png" alt="삐야" style={{ width: 80, marginBottom: 8 }} />
         <div style={{ marginBottom: 16 }}><TwemojiImg code={slide.twemoji} size={48} /></div>
 
-        <p style={{ fontSize: 20, fontWeight: 800, color: '#2D2D2D', letterSpacing: '-0.4px', marginBottom: 14 }}>
+        <p style={{ fontSize: 20, fontWeight: 800, color: '#2D2D2D', letterSpacing: '-0.4px', marginBottom: 14, fontFamily: "'Gowun Dodum', sans-serif" }}>
           {slide.title}
         </p>
-        <p style={{ fontSize: 14, color: '#888', lineHeight: 1.8, whiteSpace: 'pre-line', marginBottom: 32 }}>
+        <p style={{ fontSize: 14, color: '#888', lineHeight: 1.8, whiteSpace: 'pre-line', marginBottom: 32, fontFamily: "'Nanum Square Round', sans-serif" }}>
           {slide.desc}
         </p>
 
