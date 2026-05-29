@@ -7,6 +7,21 @@ import { useConfirm } from '../components/ConfirmModal'
 
 const ROTATIONS = [-1.4, 0.9, -0.7, 1.2, -1.0, 0.6]
 
+const CORNER_DECOR = [
+  { char: '★', color: '#FFD85C' },
+  { char: '♥', color: '#FF7BA9' },
+  { char: '✿', color: '#8FE3CF' },
+  { char: '◆', color: '#B5A0E8' },
+  { char: '✦', color: '#FF9EC0' },
+  { char: '♪', color: '#FFBD76' },
+]
+const CORNERS = [
+  { key: 'tl', pos: { top: 3, left: 3 } },
+  { key: 'tr', pos: { top: 3, right: 3 } },
+  { key: 'bl', pos: { bottom: 28, left: 3 } },
+  { key: 'br', pos: { bottom: 28, right: 3 } },
+]
+
 export default function RecordDetailPage({ user, recordId, teamId }) {
   const [record, setRecord] = useState(null)
   const [comments, setComments] = useState([])
@@ -17,8 +32,9 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const [fullscreenPhoto, setFullscreenPhoto] = useState(null)
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
-  const [editPhoto, setEditPhoto] = useState(null)
-  const [editPreview, setEditPreview] = useState(null)
+  const [editPhotos, setEditPhotos] = useState([])
+  const [editPreviews, setEditPreviews] = useState([])
+  const [editExistingURLs, setEditExistingURLs] = useState([])
   const [editLoading, setEditLoading] = useState(false)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
@@ -116,8 +132,12 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const handleStartEdit = () => {
     setEditTitle(record.title)
     setEditContent(record.content || '')
-    setEditPreview(record.photoURL || record.photoURLs?.[0] || null)
-    setEditPhoto(null)
+    const existingURLs = record.photoURLs?.length
+      ? record.photoURLs
+      : record.photoURL ? [record.photoURL] : []
+    setEditExistingURLs(existingURLs)
+    setEditPhotos([])
+    setEditPreviews([])
     setEditing(true)
   }
 
@@ -125,18 +145,21 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     if (!editTitle.trim()) return alert('제목을 입력해주세요')
     setEditLoading(true)
     try {
-      let photoURL = record.photoURL || null
-      if (editPhoto) {
-        const storageRef = ref(storage, `records/${user.uid}/${Date.now()}_${editPhoto.name}`)
-        await uploadBytes(storageRef, editPhoto)
-        photoURL = await getDownloadURL(storageRef)
+      const newURLs = []
+      for (const photo of editPhotos) {
+        const storageRef = ref(storage, `records/${user.uid}/${Date.now()}_${photo.name}`)
+        await uploadBytes(storageRef, photo)
+        newURLs.push(await getDownloadURL(storageRef))
       }
+      const allPhotoURLs = [...editExistingURLs, ...newURLs]
       const updateRef = teamId
         ? doc(db, 'teams', teamId, 'records', recordId)
         : doc(db, 'users', user.uid, 'records', recordId)
       await updateDoc(updateRef, {
-        title: editTitle, content: editContent, photoURL,
-        photoURLs: photoURL ? [photoURL] : [],
+        title: editTitle,
+        content: editContent,
+        photoURL: allPhotoURLs[0] || null,
+        photoURLs: allPhotoURLs,
       })
       setEditing(false)
     } catch (err) {
@@ -211,11 +234,14 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          multiple
           onChange={e => {
-            const file = e.target.files[0]
-            if (!file) return
-            setEditPhoto(file)
-            setEditPreview(URL.createObjectURL(file))
+            const files = Array.from(e.target.files || [])
+            if (!files.length) return
+            const total = editExistingURLs.length + editPhotos.length
+            const added = files.slice(0, 15 - total)
+            setEditPhotos(prev => [...prev, ...added])
+            setEditPreviews(prev => [...prev, ...added.map(f => URL.createObjectURL(f))])
             e.target.value = ''
           }}
           style={{ display: 'none' }}
@@ -223,24 +249,54 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         <button onClick={() => setEditing(false)} style={{ background: 'none', fontSize: 22, color: '#FF7BA9', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, minHeight: 44 }}>←</button>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#333', marginBottom: 20 }}>기록 수정</h2>
 
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            display: 'block', width: '100%', height: 200,
-            borderRadius: 16, border: '2px dashed #FFD6E0',
-            overflow: 'hidden', marginBottom: 16, cursor: 'pointer',
-            background: editPreview ? 'none' : '#FFF0F5',
-          }}
-        >
-          {editPreview ? (
-            <img src={editPreview} alt="미리보기" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <p style={{ fontSize: 32 }}>📷</p>
-              <p style={{ fontSize: 13, color: '#FFB3C6' }}>사진 추가하기</p>
-            </div>
-          )}
-        </div>
+        {editExistingURLs.length === 0 && editPreviews.length === 0 ? (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              display: 'flex', width: '100%', height: 160,
+              borderRadius: 20, border: '2px dashed #FFD6E0',
+              marginBottom: 16, cursor: 'pointer',
+              background: '#FFF0F5',
+              flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+          >
+            <p style={{ fontSize: 30 }}>📷</p>
+            <p style={{ fontSize: 13, color: '#FFB3C6', fontWeight: 500 }}>사진 추가하기 (최대 15장)</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8, marginBottom: 16, WebkitOverflowScrolling: 'touch' }}>
+            {editExistingURLs.map((url, idx) => (
+              <div key={`ex-${idx}`} style={{ position: 'relative', flexShrink: 0 }}>
+                <img src={url} alt="" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 14 }} />
+                <button
+                  onClick={() => setEditExistingURLs(prev => prev.filter((_, i) => i !== idx))}
+                  style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,0.5)', color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >✕</button>
+              </div>
+            ))}
+            {editPreviews.map((src, idx) => (
+              <div key={`new-${idx}`} style={{ position: 'relative', flexShrink: 0 }}>
+                <img src={src} alt="" style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 14 }} />
+                <button
+                  onClick={() => {
+                    setEditPhotos(prev => prev.filter((_, i) => i !== idx))
+                    setEditPreviews(prev => prev.filter((_, i) => i !== idx))
+                  }}
+                  style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: 11, background: 'rgba(0,0,0,0.5)', color: 'white', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >✕</button>
+              </div>
+            ))}
+            {(editExistingURLs.length + editPhotos.length) < 15 && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{ flexShrink: 0, width: 120, height: 120, borderRadius: 14, border: '2px dashed #FFD6E0', background: '#FFF0F5', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 4 }}
+              >
+                <span style={{ fontSize: 22 }}>📷</span>
+                <span style={{ fontSize: 13, color: '#FFB3C6' }}>{editExistingURLs.length + editPhotos.length}/15</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <input value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="제목" style={{ ...inputStyle, fontSize: 18 }} />
         <textarea value={editContent} onChange={e => setEditContent(e.target.value)} placeholder="내용" rows={5} style={{ ...inputStyle, resize: 'none', lineHeight: 1.9, fontSize: 16 }} />
@@ -293,15 +349,14 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                 scrollSnapAlign: 'center',
                 position: 'relative',
               }}>
-                {['topLeft','topRight','bottomLeft','bottomRight'].map(pos => (
-                  <span key={pos} style={{
-                    position: 'absolute', fontSize: 10, lineHeight: 1, pointerEvents: 'none',
-                    ...(pos === 'topLeft'     ? { top: 3,  left: 3  } : {}),
-                    ...(pos === 'topRight'    ? { top: 3,  right: 3 } : {}),
-                    ...(pos === 'bottomLeft'  ? { bottom: 28, left: 3 } : {}),
-                    ...(pos === 'bottomRight' ? { bottom: 28, right: 3 } : {}),
-                  }}>★</span>
-                ))}
+                {CORNERS.map(({ key, pos }, ci) => {
+                  const decor = CORNER_DECOR[(i * 4 + ci) % CORNER_DECOR.length]
+                  return (
+                    <span key={key} style={{ position: 'absolute', fontSize: 10, lineHeight: 1, pointerEvents: 'none', color: decor.color, ...pos }}>
+                      {decor.char}
+                    </span>
+                  )
+                })}
                 <img src={url} alt={`사진 ${i + 1}`}
                   onClick={() => setFullscreenPhoto(url)}
                   style={{

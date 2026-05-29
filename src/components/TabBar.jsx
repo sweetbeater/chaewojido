@@ -16,19 +16,19 @@ export default function TabBar({ hasTeam }) {
   return (
     <div style={{
       position: 'fixed',
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4px)',
+      bottom: 'env(safe-area-inset-bottom, 0px)',
       left: 'max(14px, calc(50vw - 201px))',
       right: 'max(14px, calc(50vw - 201px))',
       background: 'rgba(255,255,255,0.92)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',
-      borderRadius: 28,
+      borderRadius: 24,
       boxShadow: '0 4px 24px rgba(0,0,0,0.10), 0 1px 6px rgba(0,0,0,0.06)',
       border: '1px solid rgba(255,220,235,0.5)',
       display: 'flex',
       justifyContent: 'space-around',
-      paddingTop: 8,
-      paddingBottom: 8,
+      paddingTop: 5,
+      paddingBottom: 5,
       zIndex: 100,
     }}>
       {tabs.map(tab => {
@@ -40,19 +40,19 @@ export default function TabBar({ hasTeam }) {
             onClick={() => navigate(tab.path)}
             style={{
               display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 3,
+              alignItems: 'center', gap: 2,
               background: active ? 'rgba(255,123,169,0.12)' : 'none',
-              padding: '6px 22px',
-              borderRadius: 18,
+              padding: '5px 20px',
+              borderRadius: 16,
               transition: 'background 0.2s ease',
             }}
           >
             {tab.customSrc
-              ? <img src={tab.customSrc} width={27} height={27} alt="" draggable={false} style={{ objectFit: 'contain', opacity: active ? 1 : 0.35 }} />
-              : <TwemojiImg code={tab.twemoji} size={24} style={{ opacity: active ? 1 : 0.35 }} />
+              ? <img src={tab.customSrc} width={24} height={24} alt="" draggable={false} style={{ objectFit: 'contain', opacity: active ? 1 : 0.35 }} />
+              : <TwemojiImg code={tab.twemoji} size={22} style={{ opacity: active ? 1 : 0.35 }} />
             }
             <span style={{
-              fontSize: 13, fontWeight: active ? 700 : 400,
+              fontSize: 11, fontWeight: active ? 700 : 400,
               color: active ? '#FF7BA9' : '#B0B0B0',
               letterSpacing: '-0.2px',
             }}>

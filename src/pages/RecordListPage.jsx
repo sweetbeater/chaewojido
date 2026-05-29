@@ -7,6 +7,7 @@ import { REGION_MAP } from '../utils/regions'
 export default function RecordListPage({ user, regionNum, onSelectRecord }) {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
+  const [serverConfirmed, setServerConfirmed] = useState(false)
   const [profile, setProfile] = useState(null)
   const navigate = useNavigate()
 
@@ -27,6 +28,7 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
     if (!user || !regionNum || profile === null) return
 
     setLoading(true)
+    setServerConfirmed(false)
 
     const coll = profile?.teamId
       ? collection(db, 'teams', profile.teamId, 'records')
@@ -35,16 +37,20 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
     const q = query(coll, where('regionNum', '==', regionNum), orderBy('createdAt', 'desc'))
 
     const unsub = onSnapshot(q, { includeMetadataChanges: true }, snap => {
-      // 캐시 결과가 빈 경우 서버 응답 대기 (빈 캐시로 인한 false negative 방지)
+      // 캐시 결과가 빈 경우: 서버 응답 대기 (빈 캐시로 인한 false empty 방지)
       if (snap.metadata.fromCache && snap.empty) return
       setRecords(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      if (!snap.metadata.fromCache) setServerConfirmed(true)
       setLoading(false)
     }, err => {
       console.error(err)
+      setServerConfirmed(true)
       setLoading(false)
     })
     const timeout = setTimeout(() => setLoading(false), 5000)
-    return () => { unsub(); clearTimeout(timeout) }
+    // 8초 후에도 서버 미확인 시 강제로 확정 (네트워크 불량 대비)
+    const serverTimeout = setTimeout(() => setServerConfirmed(true), 8000)
+    return () => { unsub(); clearTimeout(timeout); clearTimeout(serverTimeout) }
   }, [user, regionNum, profile])
 
   const handleSelectRecord = (record) => {
@@ -68,14 +74,20 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
       ) : records.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40 }}>
           <img src="/도트삐야_아이콘.png" alt="삐야" style={{ width: 80, opacity: 0.5, marginBottom: 12 }} />
-          <p style={{ color: '#aaa', fontSize: 14 }}>아직 기록이 없어요</p>
-          <button onClick={() => navigate('/record')} style={{
-            marginTop: 16, padding: '12px 24px',
-            borderRadius: 12, background: '#FF8FAB',
-            color: 'white', fontSize: 14, fontWeight: 'bold',
-          }}>
-            첫 기록 남기기 ✍️
-          </button>
+          {serverConfirmed ? (
+            <>
+              <p style={{ color: '#aaa', fontSize: 14 }}>아직 기록이 없어요</p>
+              <button onClick={() => navigate('/record')} style={{
+                marginTop: 16, padding: '12px 24px',
+                borderRadius: 12, background: '#FF8FAB',
+                color: 'white', fontSize: 14, fontWeight: 'bold',
+              }}>
+                첫 기록 남기기 ✍️
+              </button>
+            </>
+          ) : (
+            <p style={{ color: '#FFB3C6', fontSize: 14 }}>기록 확인 중...</p>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

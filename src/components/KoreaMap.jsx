@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { SVG_TO_REGION, REGION_INFO, REGION_TO_SVG } from '../utils/regions'
 
 const COLOR_VISITED = '#FF8FAB'
-const COLOR_UNVISITED = '#EAEAEA'
-const COLOR_PREVIEW = '#FF9EC0'
+const COLOR_UNVISITED = '#F2E8D5'
+const COLOR_PREVIEW = '#FF85B3'
 const COLOR_HIGHLIGHT_VISITED = '#FFBC00'
 
 const visitedColor = (count) => {
@@ -374,9 +374,27 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       el.setAttribute('stroke-linejoin', 'round')
       el.setAttribute('stroke-linecap', 'round')
       el.setAttribute('vector-effect', 'non-scaling-stroke')
-      el.style.filter = isHighlighted
-        ? (isVisited ? 'drop-shadow(0 0 2px rgba(255,188,0,0.5))' : 'drop-shadow(0 0 2px rgba(255,123,169,0.4))')
-        : ''
+      if (isHighlighted) {
+        el.style.stroke = isVisited ? '#E8A000' : '#FF3D75'
+        el.style.strokeWidth = '2.5'
+        el.style.filter = isVisited
+          ? 'drop-shadow(0 0 5px rgba(255,188,0,0.75))'
+          : 'drop-shadow(0 0 5px rgba(255,50,110,0.7))'
+        if (regionId !== 'gyeongbuk_ulleung' && regionId !== 'dokdo') {
+          el.style.transformBox = 'fill-box'
+          el.style.transformOrigin = 'center'
+          el.style.animation = 'regionPulse 1.4s ease-in-out infinite'
+        }
+      } else {
+        el.style.stroke = ''
+        el.style.strokeWidth = ''
+        el.style.filter = ''
+        if (regionId !== 'gyeongbuk_ulleung' && regionId !== 'dokdo') {
+          el.style.animation = ''
+          el.style.transformBox = ''
+          el.style.transformOrigin = ''
+        }
+      }
     }
 
     // 새로 색칠된 지역 "퐁!" 애니메이션
@@ -397,8 +415,15 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       const regionId = toRegionId(n)
       const el = svg.querySelector(`#${regionId}`)
       if (!el) return
-      // 울릉도·독도는 SVG transform attribute로 위치를 잡기 때문에
-      // CSS animation 적용 시 WebKit에서 transform이 충돌해 내륙으로 이동하는 버그 발생
+
+      // 물감 퍼지는 fill 전환: 크림색 → 방문 색상
+      const targetColor = visitedColor(recordCounts[regionId] || 0)
+      el.style.fill = COLOR_UNVISITED
+      el.style.transition = 'fill 0.55s ease-out'
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.fill = targetColor }))
+      setTimeout(() => { el.style.fill = ''; el.style.transition = '' }, 800)
+
+      // 퐁! 스케일 애니메이션 (울릉도·독도 제외 — WebKit SVG transform 충돌 버그)
       if (regionId !== 'gyeongbuk_ulleung' && regionId !== 'dokdo') {
         el.style.transformBox = 'fill-box'
         el.style.transformOrigin = 'center'

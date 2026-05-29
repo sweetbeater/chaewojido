@@ -178,36 +178,33 @@ export default function ProfilePage({ user }) {
             {earnedBadges.length}/{BADGES.length}
           </span>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
           {sortedBadges.map(badge => {
             const earned = earnedIds.has(badge.id)
             return (
               <div key={badge.id} style={{
                 background: earned ? 'white' : '#F5F5F5',
-                borderRadius: 20,
-                padding: '18px 14px',
+                borderRadius: 14,
+                padding: '12px 6px',
                 textAlign: 'center',
                 border: earned ? '1.5px solid #FFD6E0' : '1.5px solid transparent',
-                boxShadow: earned ? '0 6px 20px rgba(255,123,169,0.18)' : 'none',
+                boxShadow: earned ? '0 4px 12px rgba(255,123,169,0.15)' : 'none',
                 position: 'relative',
                 overflow: 'hidden',
               }}>
-                <div style={{ marginBottom: 8, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ marginBottom: 5, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {earned
-                    ? <TwemojiImg code={badge.icon} size={36} />
-                    : <span style={{ fontSize: 26, opacity: 0.25, lineHeight: 1 }}>?</span>
+                    ? <TwemojiImg code={badge.icon} size={26} />
+                    : <span style={{ fontSize: 20, opacity: 0.25, lineHeight: 1 }}>?</span>
                   }
                 </div>
-                <p style={{ fontSize: 13, fontWeight: 700, color: earned ? '#2D2D2D' : '#B0B0B0', marginBottom: 4, letterSpacing: '-0.2px' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: earned ? '#2D2D2D' : '#B0B0B0', marginBottom: 2, letterSpacing: '-0.2px', lineHeight: 1.3 }}>
                   {badge.name}
                 </p>
-                <p style={{ fontSize: 13, color: '#A0A0A0', lineHeight: 1.5 }}>
-                  {earned ? badge.description : '???'}
-                </p>
                 {earned ? (
-                  <p style={{ fontSize: 10, color: '#FF7BA9', marginTop: 6, fontWeight: 700 }}>✅ 획득완료</p>
+                  <p style={{ fontSize: 9, color: '#FF7BA9', marginTop: 3, fontWeight: 700 }}>✅ 획득</p>
                 ) : (
-                  <p style={{ fontSize: 14, marginTop: 6 }}>🔒</p>
+                  <p style={{ fontSize: 12, marginTop: 2 }}>🔒</p>
                 )}
               </div>
             )

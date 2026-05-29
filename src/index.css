@@ -90,6 +90,12 @@ a {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* 지역 선택 시 맥박 효과 */
+@keyframes regionPulse {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.05); }
+}
+
 /* 인라인 SVG 기본 border/outline 제거 */
 svg {
   border: 0 none;

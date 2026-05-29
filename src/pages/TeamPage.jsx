@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { doc, onSnapshot, setDoc, updateDoc, getDoc, arrayUnion, arrayRemove, collection, getDocs, deleteDoc, query, orderBy, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
@@ -21,6 +21,7 @@ export default function TeamPage({ user, onSelectRecord }) {
   const [newTeamName, setNewTeamName] = useState('')
   const [memberProfiles, setMemberProfiles] = useState({})
   const [recentRecords, setRecentRecords] = useState([])
+  const [showAllRecords, setShowAllRecords] = useState(false)
   const navigate = useNavigate()
   const { confirm, modal } = useConfirm()
 
@@ -61,16 +62,14 @@ export default function TeamPage({ user, onSelectRecord }) {
 
   useEffect(() => {
     if (!profile?.teamId) return
-    const q = query(
-      collection(db, 'teams', profile.teamId, 'records'),
-      orderBy('createdAt', 'desc'),
-      limit(5)
-    )
+    const q = showAllRecords
+      ? query(collection(db, 'teams', profile.teamId, 'records'), orderBy('createdAt', 'desc'))
+      : query(collection(db, 'teams', profile.teamId, 'records'), orderBy('createdAt', 'desc'), limit(5))
     const unsub = onSnapshot(q, snap => {
       setRecentRecords(snap.docs.map(d => ({ id: d.id, ...d.data() })))
     })
     return unsub
-  }, [profile?.teamId])
+  }, [profile?.teamId, showAllRecords])
 
   const clearPersonalData = async () => {
     const recordsSnap = await getDocs(collection(db, 'users', user.uid, 'records'))
@@ -287,49 +286,72 @@ export default function TeamPage({ user, onSelectRecord }) {
           })}
         </div>
 
-        {/* 최근 기록 */}
+        {/* 최근 기록 / 전체 기록 */}
         {recentRecords.length > 0 && (
           <div style={{ marginTop: 24 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 12 }}>최근 기록</p>
-            {recentRecords.map(record => {
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D' }}>
+                {showAllRecords ? '전체 기록' : '최근 기록'}
+              </p>
+              <button
+                onClick={() => setShowAllRecords(v => !v)}
+                style={{ fontSize: 12, color: '#FF8FAB', background: 'none', padding: '2px 0' }}
+              >
+                {showAllRecords ? '접기 ↑' : '더보기 →'}
+              </button>
+            </div>
+            {recentRecords.map((record, idx) => {
               const dateStr = record.createdAt?.toDate
                 ? record.createdAt.toDate().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
                 : ''
               const author = memberProfiles[record.authorUid]
+              const date = record.createdAt?.toDate?.()
+              const prevDate = idx > 0 ? recentRecords[idx - 1].createdAt?.toDate?.() : null
+              const showMonthHeader = showAllRecords && date && (
+                !prevDate ||
+                date.getFullYear() !== prevDate.getFullYear() ||
+                date.getMonth() !== prevDate.getMonth()
+              )
               return (
-                <button
-                  key={record.id}
-                  onClick={() => handleRecordClick(record)}
-                  style={{
-                    width: '100%', textAlign: 'left',
-                    background: 'white', borderRadius: 14,
-                    padding: '14px 16px', marginBottom: 10,
-                    border: '1px solid #FFF0F5',
-                    boxShadow: '0 2px 8px rgba(255,123,169,0.08)',
-                    display: 'block',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, paddingRight: 8 }}>
-                      <p style={{ fontSize: 13, color: '#FF7BA9', fontWeight: 600, marginBottom: 3 }}>
-                        📍 {record.regionName}
-                      </p>
-                      <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 3 }}>
-                        {record.title}
-                      </p>
-                      <p style={{ fontSize: 12, color: '#B0B0B0' }}>
-                        {author?.nickname || '여행자'} · {dateStr}
-                      </p>
+                <Fragment key={record.id}>
+                  {showMonthHeader && (
+                    <p style={{ fontSize: 12, color: '#FF8FAB', fontWeight: 700, marginTop: idx > 0 ? 16 : 0, marginBottom: 8 }}>
+                      {date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleRecordClick(record)}
+                    style={{
+                      width: '100%', textAlign: 'left',
+                      background: 'white', borderRadius: 14,
+                      padding: '14px 16px', marginBottom: 10,
+                      border: '1px solid #FFF0F5',
+                      boxShadow: '0 2px 8px rgba(255,123,169,0.08)',
+                      display: 'block',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, paddingRight: 8 }}>
+                        <p style={{ fontSize: 13, color: '#FF7BA9', fontWeight: 600, marginBottom: 3 }}>
+                          📍 {record.regionName}
+                        </p>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 3 }}>
+                          {record.title}
+                        </p>
+                        <p style={{ fontSize: 12, color: '#B0B0B0' }}>
+                          {author?.nickname || '여행자'} · {dateStr}
+                        </p>
+                      </div>
+                      {record.photoURL || record.photoURLs?.[0] ? (
+                        <img
+                          src={record.photoURL || record.photoURLs[0]}
+                          alt=""
+                          style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
+                        />
+                      ) : null}
                     </div>
-                    {record.photoURL || record.photoURLs?.[0] ? (
-                      <img
-                        src={record.photoURL || record.photoURLs[0]}
-                        alt=""
-                        style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
-                      />
-                    ) : null}
-                  </div>
-                </button>
+                  </button>
+                </Fragment>
               )
             })}
           </div>
