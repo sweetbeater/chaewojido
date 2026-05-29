@@ -31,7 +31,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [showReset, setShowReset] = useState(false)
+  const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
@@ -88,13 +91,16 @@ export default function LoginPage() {
   }
 
   const handleReset = async () => {
-    if (!email.trim()) return setError('비밀번호를 재설정할 이메일을 입력해주세요')
+    if (!resetEmail.trim()) return setError('이메일을 입력해주세요')
+    setResetLoading(true)
+    setError('')
     try {
-      await sendPasswordResetEmail(auth, email)
+      await sendPasswordResetEmail(auth, resetEmail.trim())
       setResetSent(true)
-      setError('')
     } catch {
-      setError('이메일을 찾을 수 없어요')
+      setError('등록된 이메일을 찾을 수 없어요')
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -165,65 +171,116 @@ export default function LoginPage() {
         boxShadow: '0 -6px 32px rgba(0,0,0,0.12)',
         position: 'relative', zIndex: 1,
       }}>
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <input
-            type="email" placeholder="이메일"
-            value={email} onChange={e => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-          <input
-            type="password" placeholder="비밀번호"
-            value={password} onChange={e => setPassword(e.target.value)}
-            style={inputStyle}
-          />
-          {error && <p style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center', fontWeight: 500 }}>{error}</p>}
-          {resetSent && <p style={{ color: '#FF7BA9', fontSize: 13, textAlign: 'center', fontWeight: 500 }}>재설정 이메일을 보냈어요 ✉️</p>}
-          <button type="submit" style={primaryBtn}>로그인</button>
-        </form>
+        {showReset ? (
+          /* 비밀번호 재설정 섹션 */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <button
+              onClick={() => { setShowReset(false); setResetSent(false); setError(''); setResetEmail('') }}
+              style={{ background: 'none', color: '#B0B0B0', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, padding: 0, marginBottom: 4 }}
+            >
+              ← 돌아가기
+            </button>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#2D2D2D', marginBottom: 4 }}>비밀번호 재설정</h2>
+            {resetSent ? (
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <p style={{ fontSize: 36, marginBottom: 12 }}>✉️</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 8 }}>이메일을 보냈어요!</p>
+                <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7 }}>
+                  <strong style={{ color: '#FF7BA9' }}>{resetEmail}</strong>으로<br />비밀번호 재설정 링크를 보냈어요.<br />이메일을 확인해 주세요.
+                </p>
+                <button
+                  onClick={() => { setShowReset(false); setResetSent(false); setResetEmail('') }}
+                  style={{ ...primaryBtn, marginTop: 24 }}
+                >
+                  로그인으로 돌아가기
+                </button>
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, marginBottom: 4 }}>
+                  가입하신 이메일 주소를 입력하시면<br />비밀번호 재설정 링크를 보내드려요.
+                </p>
+                <input
+                  type="email"
+                  placeholder="이메일 주소"
+                  value={resetEmail}
+                  onChange={e => { setResetEmail(e.target.value); setError('') }}
+                  style={inputStyle}
+                  autoFocus
+                />
+                {error && <p style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center', fontWeight: 500 }}>{error}</p>}
+                <button onClick={handleReset} disabled={resetLoading} style={{ ...primaryBtn, opacity: resetLoading ? 0.6 : 1 }}>
+                  {resetLoading ? '전송 중...' : '재설정 링크 보내기'}
+                </button>
+              </>
+            )}
+          </div>
+        ) : (
+          /* 로그인 섹션 */
+          <>
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <input
+                type="email" placeholder="이메일"
+                value={email} onChange={e => setEmail(e.target.value)}
+                style={inputStyle}
+              />
+              <input
+                type="password" placeholder="비밀번호"
+                value={password} onChange={e => setPassword(e.target.value)}
+                style={inputStyle}
+              />
+              {error && <p style={{ color: '#FF6B6B', fontSize: 13, textAlign: 'center', fontWeight: 500 }}>{error}</p>}
+              <button type="submit" style={primaryBtn}>로그인</button>
+            </form>
 
-        <button onClick={handleReset} style={{ marginTop: 10, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '10px auto 0' }}>
-          비밀번호를 잊으셨나요?
-        </button>
+            <button
+              onClick={() => { setShowReset(true); setResetEmail(email); setError('') }}
+              style={{ marginTop: 10, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '10px auto 0' }}
+            >
+              비밀번호를 잊으셨나요?
+            </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 14px' }}>
-          <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
-          <span style={{ fontSize: 13, color: '#C0C0C0' }}>또는</span>
-          <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
-        </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '18px 0 14px' }}>
+              <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
+              <span style={{ fontSize: 13, color: '#C0C0C0' }}>또는</span>
+              <div style={{ flex: 1, height: 1, background: '#F0F0F0' }} />
+            </div>
 
-        <button onClick={handleGoogle} style={{
-          ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-        }}>
-          <GoogleIcon />
-          구글로 시작하기
-        </button>
+            <button onClick={handleGoogle} style={{
+              ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            }}>
+              <GoogleIcon />
+              구글로 시작하기
+            </button>
 
-        {isNative && (
-          <button onClick={handleApple} style={{ ...outlineBtn, marginTop: 10, background: '#000', color: '#fff', borderColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <AppleIcon />
-            Apple로 시작하기
-          </button>
+            {isNative && (
+              <button onClick={handleApple} style={{ ...outlineBtn, marginTop: 10, background: '#000', color: '#fff', borderColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <AppleIcon />
+                Apple로 시작하기
+              </button>
+            )}
+
+            <button onClick={handleGuest} style={{ ...outlineBtn, marginTop: 10, color: '#888', borderColor: '#E0E0E0' }}>
+              👤 게스트로 시작하기
+            </button>
+
+            <p style={{ fontSize: 10, color: '#C0C0C0', marginTop: 8, textAlign: 'center', lineHeight: 1.7 }}>
+              게스트 모드는 서버 저장 및 팀 기능을 사용할 수 없어요
+            </p>
+
+            <button onClick={() => navigate('/register')} style={{ marginTop: 16, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '16px auto 0' }}>
+              아직 계정이 없으신가요? <span style={{ color: '#FF7BA9', fontWeight: 700 }}>회원가입</span>
+            </button>
+
+            <p style={{ fontSize: 10, color: '#C0C0C0', marginTop: 14, textAlign: 'center', lineHeight: 1.7 }}>
+              로그인하면{' '}
+              <a href="/privacy.html" style={{ color: '#C0C0C0', textDecoration: 'underline' }}>
+                개인정보처리방침
+              </a>
+              에 동의합니다.
+            </p>
+          </>
         )}
-
-        <button onClick={handleGuest} style={{ ...outlineBtn, marginTop: 10, color: '#888', borderColor: '#E0E0E0' }}>
-          👤 게스트로 시작하기
-        </button>
-
-        <p style={{ fontSize: 10, color: '#C0C0C0', marginTop: 8, textAlign: 'center', lineHeight: 1.7 }}>
-          게스트 모드는 서버 저장 및 팀 기능을 사용할 수 없어요
-        </p>
-
-        <button onClick={() => navigate('/register')} style={{ marginTop: 16, fontSize: 13, color: '#B0B0B0', background: 'none', display: 'block', margin: '16px auto 0' }}>
-          아직 계정이 없으신가요? <span style={{ color: '#FF7BA9', fontWeight: 700 }}>회원가입</span>
-        </button>
-
-        <p style={{ fontSize: 10, color: '#C0C0C0', marginTop: 14, textAlign: 'center', lineHeight: 1.7 }}>
-          로그인하면{' '}
-          <a href="/privacy.html" style={{ color: '#C0C0C0', textDecoration: 'underline' }}>
-            개인정보처리방침
-          </a>
-          에 동의합니다.
-        </p>
       </div>
     </div>
   )
