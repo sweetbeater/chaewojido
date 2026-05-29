@@ -13,6 +13,41 @@ const sendPush = async (messaging, token, title, body) => {
   }
 }
 
+// 팀 기록 생성 시 다른 팀원들에게 알림
+exports.onTeamRecordCreated = onDocumentCreated(
+  {
+    document: 'teams/{teamId}/records/{recordId}',
+    region: 'asia-northeast3',
+  },
+  async (event) => {
+    const db = getFirestore()
+    const messaging = getMessaging()
+
+    const record = event.data.data()
+    const { teamId } = event.params
+    const authorUid = record.authorUid
+    if (!authorUid) return
+
+    const teamSnap = await db.collection('teams').doc(teamId).get()
+    if (!teamSnap.exists) return
+
+    const members = teamSnap.data().members || []
+    const others = members.filter(uid => uid !== authorUid)
+
+    await Promise.all(others.map(async uid => {
+      const snap = await db.collection('users').doc(uid).get()
+      if (!snap.exists) return
+      const token = snap.data().fcmToken
+      if (!token) return
+      await sendPush(
+        messaging, token,
+        '✍️ 새 기록이 올라왔어요!',
+        `${record.authorNickname || '팀원'}님이 "${record.title}" 기록을 남겼어요`
+      )
+    }))
+  }
+)
+
 // 댓글 작성 시 알림 (기록 작성자에게)
 exports.onCommentCreated = onDocumentCreated(
   {

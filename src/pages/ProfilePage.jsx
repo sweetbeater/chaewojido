@@ -111,9 +111,11 @@ export default function ProfilePage({ user }) {
             <p style={{ fontSize: 18, fontWeight: 800, color: '#2D2D2D', marginBottom: 6 }}>
               {selectedBadge.name}
             </p>
-            <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 14 }}>
-              {selectedBadge.description}
-            </p>
+            {earnedIds.has(selectedBadge.id) && (
+              <p style={{ fontSize: 13, color: '#888', lineHeight: 1.7, marginBottom: 14 }}>
+                {selectedBadge.description}
+              </p>
+            )}
             {earnedIds.has(selectedBadge.id) ? (
               <div style={{ padding: '8px 16px', borderRadius: 20, background: '#FFE8EF', display: 'inline-block' }}>
                 <span style={{ fontSize: 12, color: '#FF7BA9', fontWeight: 700 }}>✅ 획득 완료</span>
