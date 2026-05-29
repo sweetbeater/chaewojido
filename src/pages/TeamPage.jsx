@@ -375,7 +375,7 @@ export default function TeamPage({ user, onSelectRecord }) {
         </div>
 
         <button
-          onClick={() => handleCopy(`나랑 같이 우리나라 도장깨기 하지 않을래..? ૮ • ﻌ -ა ♥\n초대 코드: ${teamData.code}\nhttps://chaewojido-17bdc.web.app`)}
+          onClick={() => handleCopy(`나랑 같이 우리나라 도장깨기 하지 않을래..? ૮ • ﻌ -ა ♥\n초대 코드: ${teamData.code}\n앱스토어에서 '채워지도' 검색 후 코드 입력해줘!`)}
           style={btnStyle}>
           {copied ? '✅ 복사됨!' : '📋 팀 코드 복사하기'}
         </button>

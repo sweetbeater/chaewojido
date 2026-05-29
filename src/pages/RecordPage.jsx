@@ -179,6 +179,7 @@ export default function RecordPage({ user, regionNum }) {
             <input
               type="date"
               value={travelStartDate}
+              max={todayString()}
               onChange={e => {
                 setTravelStartDate(e.target.value)
                 if (travelEndDate < e.target.value) setTravelEndDate(e.target.value)
@@ -190,6 +191,7 @@ export default function RecordPage({ user, regionNum }) {
               type="date"
               value={travelEndDate}
               min={travelStartDate}
+              max={todayString()}
               onChange={e => setTravelEndDate(e.target.value)}
               style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />

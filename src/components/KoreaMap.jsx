@@ -503,7 +503,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
         <button
           onClick={() => resetFnRef.current?.()}
           style={{
-            position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)', right: 12, zIndex: 10,
+            position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 140px)', right: 12, zIndex: 10,
             background: 'rgba(255,255,255,0.9)',
             border: '1.5px solid #FFD6E0',
             borderRadius: 20, padding: '6px 14px',
