@@ -7,6 +7,7 @@ import BadgePopup from '../components/BadgePopup'
 import { useConfirm } from '../components/ConfirmModal'
 import { getCompletionRate, TOTAL_REGIONS, REGION_MAP, SVG_TO_REGION, searchRegions } from '../utils/regions'
 import { getNewBadges } from '../utils/badges'
+import { playPaintSound, playBadgeSound } from '../utils/sounds'
 
 // 기록 목록에서 지역별 사진 풀을 빌드하고 랜덤 1장 선택
 const buildRegionPhotos = (docs) => {
@@ -134,6 +135,7 @@ export default function MapPage({ user, onOpenRecord }) {
 
   const markVisited = async () => {
     if (!selectedRegion || !user || isVisited) return
+    playPaintSound()
     const prev = visitedRegions
     await addVisited(selectedRegion)
     const next = [...new Set([...prev, selectedRegion])]
@@ -142,13 +144,14 @@ export default function MapPage({ user, onOpenRecord }) {
       next.map(n => REGION_MAP[n]?.id).filter(Boolean),
       records
     )
-    if (earned.length) setNewBadges(earned)
+    if (earned.length) { playBadgeSound(); setNewBadges(earned) }
     setSelectedRegion(null)
   }
 
   const markAndRecord = async () => {
     if (!selectedRegion || !user) return
     if (!isVisited) {
+      playPaintSound()
       const prev = visitedRegions
       await addVisited(selectedRegion)
       const next = [...new Set([...prev, selectedRegion])]
@@ -157,7 +160,7 @@ export default function MapPage({ user, onOpenRecord }) {
         next.map(n => REGION_MAP[n]?.id).filter(Boolean),
         records
       )
-      if (earned.length) setNewBadges(earned)
+      if (earned.length) { playBadgeSound(); setNewBadges(earned) }
     }
     onOpenRecord(selectedRegion)
     navigate('/record')
