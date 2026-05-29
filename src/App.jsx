@@ -102,7 +102,18 @@ function AppRouter({ user, hasTeam, showOnboarding, onOnboardingDone, recordRegi
     const isNative = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
     if (isNative) {
       const handles = []
+      let clearBadge = null
       import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {
+        // 포그라운드 진입 시 배지 초기화
+        clearBadge = () => {
+          if (document.visibilityState === 'visible') {
+            FirebaseMessaging.setBadge({ count: 0 }).catch(() => {})
+            FirebaseMessaging.clearDeliveredNotifications().catch(() => {})
+          }
+        }
+        clearBadge()
+        document.addEventListener('visibilitychange', clearBadge)
+
         // 포그라운드 알림 배너
         FirebaseMessaging.addListener('notificationReceived', (event) => {
           setNotification({
@@ -122,7 +133,10 @@ function AppRouter({ user, hasTeam, showOnboarding, onOnboardingDone, recordRegi
           }
         }).then(h => handles.push(h))
       })
-      return () => { handles.forEach(h => h?.remove?.()) }
+      return () => {
+        handles.forEach(h => h?.remove?.())
+        if (clearBadge) document.removeEventListener('visibilitychange', clearBadge)
+      }
     }
     if (!messaging) return
     const unsub = onMessage(messaging, (payload) => {
