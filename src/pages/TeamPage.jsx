@@ -301,20 +301,20 @@ export default function TeamPage({ user, onSelectRecord }) {
             </div>
             {(showAllRecords
             ? [...recentRecords].sort((a, b) => {
-                const da = a.travelDate?.toDate?.() || a.createdAt?.toDate?.() || new Date(0)
-                const db2 = b.travelDate?.toDate?.() || b.createdAt?.toDate?.() || new Date(0)
+                const da = a.travelStartDate?.toDate?.() || a.travelDate?.toDate?.() || a.createdAt?.toDate?.() || new Date(0)
+                const db2 = b.travelStartDate?.toDate?.() || b.travelDate?.toDate?.() || b.createdAt?.toDate?.() || new Date(0)
                 return db2 - da
               })
             : recentRecords
           ).map((record, idx, list) => {
-              const displayDate = record.travelDate?.toDate?.() || record.createdAt?.toDate?.()
+              const displayDate = record.travelStartDate?.toDate?.() || record.travelDate?.toDate?.() || record.createdAt?.toDate?.()
               const dateStr = displayDate
                 ? displayDate.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
                 : ''
               const author = memberProfiles[record.authorUid]
               const date = displayDate
               const prevDate = idx > 0
-                ? (list[idx - 1].travelDate?.toDate?.() || list[idx - 1].createdAt?.toDate?.())
+                ? (list[idx - 1].travelStartDate?.toDate?.() || list[idx - 1].travelDate?.toDate?.() || list[idx - 1].createdAt?.toDate?.())
                 : null
               const showMonthHeader = showAllRecords && date && (
                 !prevDate ||

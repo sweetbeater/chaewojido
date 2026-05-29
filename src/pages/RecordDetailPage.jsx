@@ -338,7 +338,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                 setEditTravelDate(e.target.value)
                 if (editTravelEndDate < e.target.value) setEditTravelEndDate(e.target.value)
               }}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />
             <span style={{ color: '#B0B0B0', fontSize: 13, flexShrink: 0 }}>~</span>
             <input
@@ -346,7 +346,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
               value={editTravelEndDate}
               min={editTravelDate}
               onChange={e => setEditTravelEndDate(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />
           </div>
         </div>

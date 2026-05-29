@@ -183,7 +183,7 @@ export default function RecordPage({ user, regionNum }) {
                 setTravelStartDate(e.target.value)
                 if (travelEndDate < e.target.value) setTravelEndDate(e.target.value)
               }}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />
             <span style={{ color: '#B0B0B0', fontSize: 13, flexShrink: 0 }}>~</span>
             <input
@@ -191,7 +191,7 @@ export default function RecordPage({ user, regionNum }) {
               value={travelEndDate}
               min={travelStartDate}
               onChange={e => setTravelEndDate(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, marginBottom: 0 }}
+              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />
           </div>
         </div>
