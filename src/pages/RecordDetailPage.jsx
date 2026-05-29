@@ -154,6 +154,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
     const endObj = record.travelEndDate?.toDate?.() || startObj
     setEditTravelDate(fmt(startObj))
     setEditTravelEndDate(fmt(endObj))
+    setEditSaveStatus('')
     setEditing(true)
   }
 
