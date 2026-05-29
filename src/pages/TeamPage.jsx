@@ -139,6 +139,9 @@ export default function TeamPage({ user, onSelectRecord }) {
       await deleteDoc(doc(db, 'teams', profile.teamId))
       for (const uid of (teamData.members || [])) {
         if (uid !== user.uid) {
+          // 상대방 personal records도 삭제 → 깨끗한 개인 지도로 복귀
+          const otherPersonalSnap = await getDocs(collection(db, 'users', uid, 'records'))
+          for (const d of otherPersonalSnap.docs) await deleteDoc(d.ref)
           await updateDoc(doc(db, 'users', uid), { teamId: null, visitedRegions: [] })
         }
       }
