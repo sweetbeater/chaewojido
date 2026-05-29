@@ -242,7 +242,8 @@ export default function MapPage({ user, onOpenRecord }) {
         ))
         teamSnap.docs.forEach(d => teamRecordDocs.push(d))
       }
-      const totalRecords = personalSnap.size
+      // 팀 모드: 팀 기록 수 기준 (상대방 기록도 포함), 개인 모드: 개인 기록 수 기준
+      const totalRecords = isTeamMode ? teamRecordDocs.length : personalSnap.size
 
       if (totalRecords > 0) {
         const ok = await confirm(
