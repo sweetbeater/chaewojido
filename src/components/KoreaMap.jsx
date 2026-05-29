@@ -144,10 +144,12 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       transformRef.current = { s, tx, ty }
       const overlay = photoOverlayRef.current
       if (overlay) {
-        overlay.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`
-        if (overlay.children.length) {
-          const invS = (1 / s).toFixed(4)
-          for (const el of overlay.children) el.style.transform = `scale(${invS})`
+        overlay.style.transform = ''
+        for (const el of overlay.children) {
+          const px = parseFloat(el.dataset.px)
+          const py = parseFloat(el.dataset.py)
+          el.style.left = `${(tx + px * s - 28).toFixed(1)}px`
+          el.style.top = `${(ty + py * s - 66).toFixed(1)}px`
         }
       }
       if (!skipHeavy) {
@@ -336,7 +338,9 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
 
       const wrap = document.createElement('div')
       const wrapPE = showPhotoMapRef.current ? 'auto' : 'none'
-      wrap.style.cssText = `position:absolute;left:${pxX - 28}px;top:${pxY - 66}px;width:56px;height:66px;pointer-events:${wrapPE};transform:scale(${(1 / curS).toFixed(4)});transform-origin:50% 100%;cursor:pointer;`
+      wrap.dataset.px = pxX
+      wrap.dataset.py = pxY
+      wrap.style.cssText = `position:absolute;left:${(tx + pxX * curS - 28).toFixed(1)}px;top:${(ty + pxY * curS - 66).toFixed(1)}px;width:56px;height:66px;pointer-events:${wrapPE};cursor:pointer;`
       const capturedRegionId = regionId
       wrap.addEventListener('click', (e) => {
         if (!showPhotoMapRef.current) return
@@ -363,8 +367,7 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
       overlay.appendChild(wrap)
     }
 
-    overlay.style.transformOrigin = '0 0'
-    overlay.style.transform = `translate(${tx}px,${ty}px) scale(${curS})`
+    overlay.style.transform = ''
   }, [ready, layoutReady, layoutVersion, regionPhotos, recordCounts])
 
   // ── 방문 지역 색칠 ──
