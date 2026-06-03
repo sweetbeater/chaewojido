@@ -74,11 +74,11 @@ export default function TeamPage({ user, onSelectRecord }) {
   const clearPersonalData = async () => {
     const recordsSnap = await getDocs(collection(db, 'users', user.uid, 'records'))
     for (const d of recordsSnap.docs) await deleteDoc(d.ref)
-    await updateDoc(doc(db, 'users', user.uid), { visitedRegions: [] })
+    await updateDoc(doc(db, 'users', user.uid), { visitedRegions: [], seoulGus: [] })
   }
 
   const confirmClear = async (message) => {
-    const hasData = (profile?.visitedRegions?.length || 0) > 0
+    const hasData = (profile?.visitedRegions?.length || 0) > 0 || (profile?.seoulGus?.length || 0) > 0
     if (!hasData) return true
     return confirm(message, { confirmText: '계속', destructive: true })
   }
@@ -142,7 +142,7 @@ export default function TeamPage({ user, onSelectRecord }) {
           // 상대방 personal records도 삭제 → 깨끗한 개인 지도로 복귀
           const otherPersonalSnap = await getDocs(collection(db, 'users', uid, 'records'))
           for (const d of otherPersonalSnap.docs) await deleteDoc(d.ref)
-          await updateDoc(doc(db, 'users', uid), { teamId: null, visitedRegions: [] })
+          await updateDoc(doc(db, 'users', uid), { teamId: null, visitedRegions: [], seoulGus: [] })
         }
       }
     } else {
@@ -156,7 +156,7 @@ export default function TeamPage({ user, onSelectRecord }) {
 
     const personalRecords = await getDocs(collection(db, 'users', user.uid, 'records'))
     for (const d of personalRecords.docs) await deleteDoc(d.ref)
-    await updateDoc(doc(db, 'users', user.uid), { teamId: null, visitedRegions: [] })
+    await updateDoc(doc(db, 'users', user.uid), { teamId: null, visitedRegions: [], seoulGus: [] })
   }
 
   const saveTeamName = async () => {
@@ -342,7 +342,7 @@ export default function TeamPage({ user, onSelectRecord }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ flex: 1, paddingRight: 8 }}>
                         <p style={{ fontSize: 13, color: '#FF7BA9', fontWeight: 600, marginBottom: 3 }}>
-                          📍 {record.regionName}
+                          📍 {record.gu ? `서울 ${record.gu}` : record.regionName}
                         </p>
                         <p style={{ fontSize: 15, fontWeight: 700, color: '#2D2D2D', marginBottom: 3, fontFamily: "'Gowun Dodum', sans-serif" }}>
                           {record.title}
@@ -375,7 +375,7 @@ export default function TeamPage({ user, onSelectRecord }) {
         </div>
 
         <button
-          onClick={() => handleCopy(`나랑 같이 우리나라 도장깨기 하지 않을래..? ૮ • ﻌ -ა ♥\n초대 코드: ${teamData.code}\n앱스토어에서 '채워지도' 검색 후 코드 입력해줘!`)}
+          onClick={() => handleCopy(`나랑 같이 우리나라 도장깨기 하지 않을래..? ૮ • ﻌ -ა ♥\n초대 코드: ${teamData.code}\nhttps://apps.apple.com/kr/app/%EC%B1%84%EC%9B%8C%EC%A7%80%EB%8F%84/id6773252339`)}
           style={btnStyle}>
           {copied ? '✅ 복사됨!' : '📋 팀 코드 복사하기'}
         </button>

@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { REGION_MAP } from '../utils/regions'
+import DatePicker from '../components/DatePicker'
 
 const MAX_PHOTOS = 15
 
@@ -12,7 +13,7 @@ function todayString() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
 
-export default function RecordPage({ user, regionNum }) {
+export default function RecordPage({ user, regionNum, gu }) {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [photos, setPhotos] = useState([])
@@ -23,7 +24,7 @@ export default function RecordPage({ user, regionNum }) {
   const [profile, setProfile] = useState(null)
   const fileInputRef = useRef(null)
   const navigate = useNavigate()
-  const regionInfo = REGION_MAP[regionNum]
+  const regionInfo = gu ? { name: `서울특별시 ${gu}` } : REGION_MAP[regionNum]
 
   useEffect(() => {
     if (!user) return
@@ -63,6 +64,7 @@ export default function RecordPage({ user, regionNum }) {
       const [ey, em, ed] = travelEndDate.split('-').map(Number)
       const recordData = {
         regionNum, regionName: regionInfo?.name || '알 수 없는 지역',
+        gu: gu || null,
         title, content,
         photoURL: photoURLs[0] || null,
         photoURLs,
@@ -176,24 +178,20 @@ export default function RecordPage({ user, regionNum }) {
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 12, color: '#B0B0B0', marginBottom: 5 }}>여행 날짜</p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="date"
+            <DatePicker
               value={travelStartDate}
               max={todayString()}
-              onChange={e => {
-                setTravelStartDate(e.target.value)
-                if (travelEndDate < e.target.value) setTravelEndDate(e.target.value)
+              onChange={v => {
+                setTravelStartDate(v)
+                if (travelEndDate < v) setTravelEndDate(v)
               }}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />
             <span style={{ color: '#B0B0B0', fontSize: 13, flexShrink: 0 }}>~</span>
-            <input
-              type="date"
+            <DatePicker
               value={travelEndDate}
               min={travelStartDate}
               max={todayString()}
-              onChange={e => setTravelEndDate(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
+              onChange={v => setTravelEndDate(v)}
             />
           </div>
         </div>

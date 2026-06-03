@@ -113,3 +113,38 @@ svg {
   box-shadow: none;
   display: block;
 }
+
+.desktop-promo-card {
+  display: none;
+}
+
+/* 데스크톱: 모바일 앱 가운데 정렬 */
+@media (min-width: 480px) {
+  html, body {
+    background: linear-gradient(135deg, #FFE4EE 0%, #FFF9FC 100%);
+  }
+
+  body {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+
+  #root {
+    width: 430px;
+    max-width: 100%;
+    position: relative;
+    transform: translateZ(0);
+    box-shadow: 0 4px 40px rgba(255, 100, 150, 0.2), 0 1px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    min-height: 100vh;
+    background: #FFFDF8;
+  }
+}
+
+/* 충분히 넓은 화면에서만 프로모 카드 표시 */
+@media (min-width: 860px) {
+  .desktop-promo-card {
+    display: flex;
+  }
+}

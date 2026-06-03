@@ -4,14 +4,14 @@ import { db } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { REGION_MAP } from '../utils/regions'
 
-export default function RecordListPage({ user, regionNum, onSelectRecord }) {
+export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) {
   const [records, setRecords] = useState([])
   const [loading, setLoading] = useState(true)
   const [serverConfirmed, setServerConfirmed] = useState(false)
   const [profile, setProfile] = useState(null)
   const navigate = useNavigate()
 
-  const regionInfo = REGION_MAP[regionNum]
+  const regionInfo = gu ? { name: `서울 ${gu}` } : REGION_MAP[regionNum]
 
   const formatTravelDate = (record) => {
     const toDate = f => f?.toDate?.() || (f instanceof Date ? f : null)
@@ -49,7 +49,8 @@ export default function RecordListPage({ user, regionNum, onSelectRecord }) {
     const unsub = onSnapshot(q, { includeMetadataChanges: true }, snap => {
       // 캐시 결과가 빈 경우: 서버 응답 대기 (빈 캐시로 인한 false empty 방지)
       if (snap.metadata.fromCache && snap.empty) return
-      const raw = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      // gu 기록은 클라이언트에서 필터 (Firestore 복합 인덱스 불필요)
+      const raw = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => gu ? r.gu === gu : true)
       // createdAt + authorUid 기준 중복 제거 (team 컬렉션 잔류 기록 방어)
       const seen = new Set()
       const deduped = raw.filter(r => {

@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { doc, onSnapshot, collection, getDocs } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { auth, db, requestNotificationPermission, disableNotifications } from '../firebase'
 import { useNavigate } from 'react-router-dom'
-import { REGION_MAP } from '../utils/regions'
+import { REGION_MAP, SVG_TO_REGION, SEOUL_REPRESENTATIVE_SVG } from '../utils/regions'
 import { BADGES, getEarnedBadges } from '../utils/badges'
 import TwemojiImg from '../components/TwemojiImg'
 
@@ -14,6 +14,8 @@ export default function ProfilePage({ user }) {
   const [notifWorking, setNotifWorking] = useState(false)
   const [nativePermDenied, setNativePermDenied] = useState(false)
   const [selectedBadge, setSelectedBadge] = useState(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const scrollRef = useRef(null)
   const navigate = useNavigate()
 
   const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor?.isNativePlatform?.()
@@ -60,8 +62,21 @@ export default function ProfilePage({ user }) {
   const visitedRegions = user?.isAnonymous
     ? (() => { try { return JSON.parse(localStorage.getItem('guestVisitedRegions') || '[]') } catch { return [] } })()
     : (profile?.teamId && teamData ? teamData.visitedRegions || [] : profile?.visitedRegions || [])
-  const visitedIds = visitedRegions.map(n => REGION_MAP[n]?.id).filter(Boolean)
-  const earnedBadges = getEarnedBadges(visitedIds, records)
+  const seoulGus = user?.isAnonymous
+    ? (() => { try { return JSON.parse(localStorage.getItem('guestSeoulGus') || '[]') } catch { return [] } })()
+    : (profile?.teamId && teamData ? teamData.seoulGus || [] : profile?.seoulGus || [])
+
+  // 서울 구가 하나라도 색칠됐으면 visitedRegions에 서울 포함 (배지 연동)
+  const effectiveVisitedRegions = (() => {
+    if (!seoulGus.length) return visitedRegions
+    const hasSeoul = visitedRegions.some(n => SVG_TO_REGION[String(n)] === 'seoul')
+    if (hasSeoul) return visitedRegions
+    return [...visitedRegions, SEOUL_REPRESENTATIVE_SVG]
+  })()
+
+  const visitedIds = effectiveVisitedRegions.map(n => REGION_MAP[n]?.id).filter(Boolean)
+  const teamInfo = profile?.teamId && teamData ? { memberCount: teamData.members?.length || 0 } : null
+  const earnedBadges = getEarnedBadges(visitedIds, records, teamInfo)
   const earnedIds = new Set(earnedBadges.map(b => b.id))
 
   const sortedBadges = [
@@ -70,7 +85,27 @@ export default function ProfilePage({ user }) {
   ]
 
   return (
-    <div style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+    <div
+      ref={scrollRef}
+      onScroll={e => setShowScrollTop(e.currentTarget.scrollTop > 80)}
+      style={{ position: 'fixed', top: 0, bottom: 0, left: '0px', right: '0px', padding: 'calc(env(safe-area-inset-top, 0px) + 28px) 20px calc(env(safe-area-inset-bottom, 0px) + 80px)', background: '#FFFDF8', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+
+      {showScrollTop && (
+        <button
+          onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{
+            position: 'fixed',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 88px)',
+            right: 20,
+            zIndex: 200,
+            width: 44, height: 44, borderRadius: 22,
+            background: 'linear-gradient(135deg, #FF7BA9, #FF5499)',
+            color: 'white', fontSize: 18,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(255,123,169,0.45)',
+          }}
+        >↑</button>
+      )}
 
       {/* 배지 상세 모달 */}
       {selectedBadge && (

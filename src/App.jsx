@@ -16,6 +16,7 @@ import TabBar from './components/TabBar'
 import SplashScreen from './components/SplashScreen'
 import OnboardingScreen from './components/OnboardingScreen'
 import TwemojiImg from './components/TwemojiImg'
+import DesktopPromo from './components/DesktopPromo'
 
 function ProtectedRoute({ children, user }) {
   if (!user) return <Navigate to="/login" />
@@ -93,7 +94,7 @@ function CompleteProfileScreen({ user, onComplete }) {
 }
 
 // BrowserRouter 내부에서 실행 → useNavigate 사용 가능
-function AppRouter({ user, hasTeam, showOnboarding, onOnboardingDone, recordRegion, setRecordRegion, selectedRecord, setSelectedRecord }) {
+function AppRouter({ user, hasTeam, showOnboarding, onOnboardingDone, recordRegion, setRecordRegion, recordGu, setRecordGu, selectedRecord, setSelectedRecord }) {
   const navigate = useNavigate()
   const [notification, setNotification] = useState(null)
 
@@ -189,17 +190,17 @@ function AppRouter({ user, hasTeam, showOnboarding, onOnboardingDone, recordRegi
         <Route path="/register" element={user && !user.isAnonymous ? <Navigate to="/" /> : <RegisterPage />} />
         <Route path="/" element={
           <ProtectedRoute user={user}>
-            <MapPage user={user} onOpenRecord={setRecordRegion} />
+            <MapPage user={user} onOpenRecord={(svgNum, gu = null) => { setRecordRegion(svgNum); setRecordGu(gu) }} />
           </ProtectedRoute>
         } />
         <Route path="/record" element={
           <ProtectedRoute user={user}>
-            <RecordPage user={user} regionNum={recordRegion} />
+            <RecordPage user={user} regionNum={recordRegion} gu={recordGu} />
           </ProtectedRoute>
         } />
         <Route path="/records" element={
           <ProtectedRoute user={user}>
-            <RecordListPage user={user} regionNum={recordRegion} onSelectRecord={setSelectedRecord} />
+            <RecordListPage user={user} regionNum={recordRegion} gu={recordGu} onSelectRecord={setSelectedRecord} />
           </ProtectedRoute>
         } />
         <Route path="/record-detail" element={
@@ -223,6 +224,7 @@ export default function App() {
   const [hasTeam, setHasTeam] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [recordRegion, setRecordRegion] = useState(null)
+  const [recordGu, setRecordGu] = useState(null)
   const [selectedRecord, setSelectedRecord] = useState(null)
   const onboardingChecked = useRef(false)
 
@@ -281,6 +283,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <DesktopPromo />
       <AppRouter
         user={user}
         hasTeam={hasTeam}
@@ -288,6 +291,8 @@ export default function App() {
         onOnboardingDone={handleOnboardingDone}
         recordRegion={recordRegion}
         setRecordRegion={setRecordRegion}
+        recordGu={recordGu}
+        setRecordGu={setRecordGu}
         selectedRecord={selectedRecord}
         setSelectedRecord={setSelectedRecord}
       />

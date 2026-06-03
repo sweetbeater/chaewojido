@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { useConfirm } from '../components/ConfirmModal'
+import DatePicker from '../components/DatePicker'
 
 const ROTATIONS = [-1.4, 0.9, -0.7, 1.2, -1.0, 0.6]
 
@@ -332,22 +333,20 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         <div style={{ marginBottom: 12 }}>
           <p style={{ fontSize: 12, color: '#B0B0B0', marginBottom: 5 }}>여행 날짜</p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="date"
+            <DatePicker
               value={editTravelDate}
-              onChange={e => {
-                setEditTravelDate(e.target.value)
-                if (editTravelEndDate < e.target.value) setEditTravelEndDate(e.target.value)
+              max={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()}
+              onChange={v => {
+                setEditTravelDate(v)
+                if (editTravelEndDate < v) setEditTravelEndDate(v)
               }}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
             />
             <span style={{ color: '#B0B0B0', fontSize: 13, flexShrink: 0 }}>~</span>
-            <input
-              type="date"
+            <DatePicker
               value={editTravelEndDate}
               min={editTravelDate}
-              onChange={e => setEditTravelEndDate(e.target.value)}
-              style={{ ...inputStyle, flex: 1, minWidth: 0, width: 'auto', marginBottom: 0 }}
+              max={(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })()}
+              onChange={v => setEditTravelEndDate(v)}
             />
           </div>
         </div>
@@ -446,7 +445,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
         border: '1px solid #FFF0F5',
       }}>
         <p style={{ fontSize: 13, color: '#FF7BA9', marginBottom: 8, fontWeight: 600, letterSpacing: '0.2px' }}>
-          📍 {record.regionName}
+          📍 {record.gu ? `서울 ${record.gu}` : record.regionName}
         </p>
         <p style={{ fontSize: 24, fontWeight: 700, color: '#2D2D2D', marginBottom: 12, lineHeight: 1.4, fontFamily: "'Gowun Dodum', sans-serif" }}>
           {record.title}

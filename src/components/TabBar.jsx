@@ -17,8 +17,8 @@ export default function TabBar({ hasTeam }) {
     <div style={{
       position: 'fixed',
       bottom: 'env(safe-area-inset-bottom, 0px)',
-      left: 'max(14px, calc(50vw - 201px))',
-      right: 'max(14px, calc(50vw - 201px))',
+      left: 14,
+      right: 14,
       background: 'rgba(255,255,255,0.92)',
       backdropFilter: 'blur(16px)',
       WebkitBackdropFilter: 'blur(16px)',

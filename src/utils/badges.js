@@ -107,6 +107,44 @@ const MOUNTAIN_IDS = [
 ]
 const TOTAL_UNIQUE_REGIONS = 162
 
+const GUN_IDS = [
+  "gangwon_hongcheon","gangwon_hoengseong","gangwon_yeongwol","gangwon_pyeongchang",
+  "gangwon_jeongseon","gangwon_cheorwon","gangwon_hwacheon","gangwon_yanggu",
+  "gangwon_inje","gangwon_goseong","gangwon_yangyang",
+  "gyeonggi_gapyeong","gyeonggi_yangpyeong","gyeonggi_yeoncheon",
+  "chungbuk_boeun","chungbuk_okcheon","chungbuk_yeongdong","chungbuk_goesan",
+  "chungbuk_eumseong","chungbuk_jeungpyeong","chungbuk_jincheon","chungbuk_danyang",
+  "chungnam_geumsan","chungnam_buyeo","chungnam_seocheon","chungnam_cheongyang",
+  "chungnam_hongseong","chungnam_yesan","chungnam_taean",
+  "jeonbuk_wanju","jeonbuk_jinan","jeonbuk_muju","jeonbuk_jangsu",
+  "jeonbuk_imsil","jeonbuk_sunchang","jeonbuk_gochang","jeonbuk_buan",
+  "jeonnam_damyang","jeonnam_jangseong","jeonnam_gokseong","jeonnam_gurye",
+  "jeonnam_goheung","jeonnam_boseong","jeonnam_hwasun","jeonnam_jangheung",
+  "jeonnam_gangjin","jeonnam_haenam","jeonnam_yeongam","jeonnam_muan",
+  "jeonnam_hampyeong","jeonnam_yeonggwang","jeonnam_wando","jeonnam_jindo","jeonnam_sinan",
+  "gyeongbuk_gunwi","gyeongbuk_uiseong","gyeongbuk_cheongsong","gyeongbuk_yeongyang",
+  "gyeongbuk_yeongdeok","gyeongbuk_cheongdo","gyeongbuk_goryeong","gyeongbuk_seongju",
+  "gyeongbuk_chilgok","gyeongbuk_yecheon","gyeongbuk_bonghwa","gyeongbuk_uljin","gyeongbuk_ulleung",
+  "gyeongnam_uiryeong","gyeongnam_haman","gyeongnam_changnyeong","gyeongnam_goseong",
+  "gyeongnam_namhae","gyeongnam_hadong","gyeongnam_sancheong","gyeongnam_hamyang",
+  "gyeongnam_geochang","gyeongnam_hapcheon",
+]
+const NORTH_BORDER_IDS = [
+  "gyeonggi_paju","gyeonggi_yeoncheon","gangwon_cheorwon","gangwon_yanggu","gangwon_inje","gangwon_goseong"
+]
+const CHEON_IDS = [
+  "incheon","gangwon_hwacheon","gangwon_hongcheon",
+  "chungbuk_okcheon","chungbuk_jincheon",
+  "gyeonggi_icheon","gyeonggi_bucheon","gyeonggi_pocheon",
+  "gyeongbuk_yeongcheon"
+]
+const KBO_IDS = ["seoul","gwangju","daegu","busan","daejeon","incheon","gyeongnam_changwon","gyeonggi_suwon"]
+const EAST_WEST_CORRIDORS = [
+  ["incheon","seoul","gyeonggi_yangpyeong","gangwon_hongcheon","gangwon_gangneung"],
+  ["chungnam_taean","chungnam_asan","chungbuk_cheongju","chungbuk_danyang","gangwon_samcheok"],
+  ["jeonbuk_gunsan","jeonbuk_jeonju","gyeongbuk_gimcheon","gyeongbuk_pohang"],
+]
+
 // ── 날짜 상수 ────────────────────────────────────────────────────
 const SEOLLAL_CHUSEOK = new Set([
   '2024-02-09','2024-02-10','2024-02-11',
@@ -164,6 +202,16 @@ export const BADGES = [
   { id:"travel_youtuber",    name:"여행 유튜버세요?", description:"100개 이상 지역 색칠",         icon:"1f3ac", condition:(v)=>v.length>=100 },
   { id:"half_way",           name:"반환점",           description:"전국의 절반 이상 색칠",        icon:"1f3af", condition:(v)=>new Set(v).size>=Math.ceil(TOTAL_UNIQUE_REGIONS/2) },
   { id:"legend_explorer",    name:"전설의 탐험가",    description:"전국 모든 지역 색칠",          icon:"1f5fa", condition:(v)=>new Set(v).size>=TOTAL_UNIQUE_REGIONS },
+  { id:"gun_10",             name:"그렇'군'요",       description:"군(郡) 10개 이상 색칠",        icon:"1f3d8", condition:(v)=>cv(v,GUN_IDS)>=10 },
+  { id:"cheon_3",            name:"삼'천'리",         description:"이름이 천으로 끝나는 지역 3개 이상 색칠", icon:"1f3d4", condition:(v)=>cv(v,CHEON_IDS)>=3 },
+  { id:"cheon_8",            name:"팔천만원",         description:"이름이 천으로 끝나는 지역 8개 이상 색칠", icon:"1f4b0", condition:(v)=>cv(v,CHEON_IDS)>=8 },
+  { id:"god",                name:"신",               description:"전 지역 2회 이상 기록",        icon:"1f451",
+    condition:(v,r)=>{
+      if(new Set(v).size<TOTAL_UNIQUE_REGIONS)return false
+      const c={}
+      for(const x of r){const id=SVG_TO_REGION[x.regionNum];if(!id)continue;c[id]=(c[id]||0)+1}
+      return [...new Set(v)].every(id=>(c[id]||0)>=2)
+    }},
 
   // ═══ 수도권 ═══
   { id:"seoul_first",        name:"상경",             description:"서울 처음으로 색칠",           icon:"1f3d9", condition:(v)=>v.includes("seoul") },
@@ -182,6 +230,7 @@ export const BADGES = [
   { id:"gangwon_expert",     name:"강원도 전문가",    description:"강원도 10개 이상 지역 색칠",   icon:"1f3d4", condition:(v)=>cv(v,GANGWON_IDS)>=10 },
   { id:"gangwon_resident",   name:"강원도민",         description:"강원도 13개 이상 지역 색칠",   icon:"26f0",  condition:(v)=>cv(v,GANGWON_IDS)>=13 },
   { id:"gangwon_master",     name:"강원도 마스터",    description:"강원도 전 지역 색칠",          icon:"1f3d4", condition:(v)=>cv(v,GANGWON_IDS)>=GANGWON_IDS.length },
+  { id:"gangwon_word",       name:"강, 원, 도",       description:"강릉·원주 색칠",               icon:"26f0",  condition:(v)=>v.includes("gangwon_gangneung")&&v.includes("gangwon_wonju") },
 
   // ═══ 충청도 ═══
   { id:"chungcheong_first",  name:"어세오세유",       description:"충청도 처음으로 색칠",         icon:"1f44b", condition:(v)=>cv(v,CHUNGCHEONG_IDS)>=1 },
@@ -189,6 +238,7 @@ export const BADGES = [
   { id:"chungcheong_10",     name:"밥은 먹었슈?",     description:"충청도 10개 이상 지역 색칠",   icon:"1f35a", condition:(v)=>cv(v,CHUNGCHEONG_IDS)>=10 },
   { id:"chungcheong_15",     name:"감사해유",         description:"충청도 15개 이상 지역 색칠",   icon:"1f64f", condition:(v)=>cv(v,CHUNGCHEONG_IDS)>=15 },
   { id:"chungcheong_all",    name:"충성도 100%",      description:"충청도 전 지역 색칠",          icon:"1f4af", condition:(v)=>cv(v,CHUNGCHEONG_IDS)>=CHUNGCHEONG_IDS.length },
+  { id:"chungcheong_word",   name:"충, 청, 도",       description:"충주·청주 색칠",               icon:"2b50",  condition:(v)=>v.includes("chungbuk_chungju")&&v.includes("chungbuk_cheongju") },
 
   // ═══ 전라도 ═══
   { id:"jeolla_first",       name:"반갑소잉",         description:"전라도 처음으로 색칠",         icon:"1f60a", condition:(v)=>cv(v,JEOLLA_IDS)>=1 },
@@ -196,15 +246,19 @@ export const BADGES = [
   { id:"jeolla_10",          name:"아따 징하게 반갑소",description:"전라도 10개 이상 지역 색칠",  icon:"1f389", condition:(v)=>cv(v,JEOLLA_IDS)>=10 },
   { id:"jeolla_15",          name:"맛의 고향",        description:"전라도 15개 이상 지역 색칠",   icon:"1f37d", condition:(v)=>cv(v,JEOLLA_IDS)>=15 },
   { id:"jeolla_master",      name:"전라도 마스터",    description:"전라도 전 지역 색칠",          icon:"1f3c5", condition:(v)=>cv(v,JEOLLA_IDS)>=JEOLLA_IDS.length },
+  { id:"jeolla_word",        name:"전, 라, 도",       description:"전주·나주 색칠",               icon:"1f308", condition:(v)=>v.includes("jeonbuk_jeonju")&&v.includes("jeonnam_naju") },
+  { id:"mujinjang",          name:"무진장 좋아!",      description:"무주·진안·장수 모두 색칠",    icon:"1f332", condition:(v)=>v.includes("jeonbuk_muju")&&v.includes("jeonbuk_jinan")&&v.includes("jeonbuk_jangsu") },
 
   // ═══ 경상도·부산·대구 ═══
   { id:"busan_first",        name:"부산 바캉스",      description:"부산 처음으로 색칠",           icon:"1f3d6", condition:(v)=>v.includes("busan") },
-  { id:"gyeongsang_first",   name:"오셨십니꺼?",      description:"경상도 처음으로 색칠",         icon:"1fae1", condition:(v)=>cv(v,GYEONGSANG_IDS)>=1 },
+  { id:"gyeongsang_first",   name:"왔나",             description:"경상도 처음으로 색칠",         icon:"1fae1", condition:(v)=>cv(v,GYEONGSANG_IDS)>=1 },
   { id:"gyeongsang_5",       name:"맞나",             description:"경상도 5개 이상 지역 색칠",    icon:"1f914", condition:(v)=>cv(v,GYEONGSANG_IDS)>=5 },
   { id:"gyeongsang_10",      name:"고맙심더",         description:"경상도 10개 이상 지역 색칠",   icon:"1f917", condition:(v)=>cv(v,GYEONGSANG_IDS)>=10 },
   { id:"gyeongsang_resident",name:"경상도민",         description:"경상도 15개 이상 지역 색칠",   icon:"1f304", condition:(v)=>cv(v,GYEONGSANG_IDS)>=15 },
   { id:"gyeongsang_master",  name:"경상도 마스터",    description:"경상도 전 지역 색칠",          icon:"1f31f", condition:(v)=>cv(v,GYEONGSANG_IDS)>=GYEONGSANG_IDS.length },
   { id:"gukbap_road",        name:"국밥 로드",        description:"부산·대구·경상도 10개 이상 색칠",icon:"1f372",condition:(v)=>cv(v,["busan","daegu",...GYEONGSANG_IDS])>=10 },
+  { id:"gyeongsang_word",    name:"경, 상, 도",       description:"경주·상주 색칠",               icon:"1f31f", condition:(v)=>v.includes("gyeongbuk_gyeongju")&&v.includes("gyeongbuk_sangju") },
+  { id:"south_trip",         name:"남행열차",          description:"전라남도·경상남도 10개 이상 색칠", icon:"1f682", condition:(v)=>cv(v,[...JEONNAM_IDS,...GYEONGNAM_IDS])>=10 },
 
   // ═══ 제주 ═══
   { id:"jeju_first",         name:"혼자옵서예",       description:"제주 혹은 서귀포 색칠",        icon:"1f33a", condition:(v)=>v.includes("jeju_jeju")||v.includes("jeju_seogwipo") },
@@ -212,25 +266,36 @@ export const BADGES = [
 
   // ═══ 특수 지역 ═══
   { id:"ulleung_first",      name:"울릉울릉",         description:"울릉 처음으로 색칠",           icon:"1f3dd", condition:(v)=>v.includes("gyeongbuk_ulleung") },
+  { id:"dokdo_first",        name:"우리땅",           description:"독도 처음으로 색칠",           icon:"1f1f0-1f1f7", condition:(v)=>v.includes("dokdo") },
   { id:"four_spirits",       name:"사방신",           description:"울릉·고성·인천·서귀포 모두 색칠",icon:"1f9ed",
     condition:(v)=>v.includes("gyeongbuk_ulleung")&&v.includes("gangwon_goseong")&&v.includes("incheon")&&v.includes("jeju_seogwipo") },
+  { id:"frontline",          name:"최전선",           description:"철원·파주 등 북한 접경 지역 3개 이상 색칠", icon:"2694", condition:(v)=>cv(v,NORTH_BORDER_IDS)>=3 },
+  { id:"joseon_paldo",       name:"조선 팔도",        description:"경기·강원·충북·충남·경북·경남·전남·전북 각 1개 이상", icon:"1f5fa",
+    condition:(v)=>cv(v,GYEONGGI_IDS)>=1&&cv(v,GANGWON_IDS)>=1&&cv(v,CHUNGBUK_IDS)>=1&&cv(v,CHUNGNAM_IDS)>=1&&cv(v,GYEONGBUK_IDS)>=1&&cv(v,GYEONGNAM_IDS)>=1&&cv(v,JEONNAM_IDS)>=1&&cv(v,JEONBUK_IDS)>=1 },
+  { id:"special_metro",      name:"넌 특별하니까… 특별시도로 와", description:"서울·세종·제주 색칠", icon:"2728",
+    condition:(v)=>v.includes("seoul")&&v.includes("sejong")&&(v.includes("jeju_jeju")||v.includes("jeju_seogwipo")) },
+  { id:"east_west_cross",    name:"가로본능",         description:"서해 인접 지역부터 동해 인접 지역까지 연속 색칠", icon:"27a1",
+    condition:(v)=>EAST_WEST_CORRIDORS.some(c=>c.every(id=>v.includes(id))) },
 
   // ═══ 특정 도시 방문 ═══
   { id:"sejong_first",       name:"세종대왕",         description:"세종 처음으로 색칠",           icon:"1f4dc", condition:(v)=>v.includes("sejong") },
   { id:"daejeon_first",      name:"빵지순례",         description:"대전 처음으로 색칠",           icon:"1f956", condition:(v)=>v.includes("daejeon") },
-  { id:"gyeongju_first",     name:"신라의 유적",      description:"경주 처음으로 색칠",           icon:"1f3db", condition:(v)=>v.includes("gyeongbuk_gyeongju") },
+  { id:"gyeongju_first",     name:"신라공주",         description:"경주 처음으로 색칠",           icon:"1f3db", condition:(v)=>v.includes("gyeongbuk_gyeongju") },
   { id:"gongju_first",       name:"공주님 어디가세요?",description:"공주 처음으로 색칠",          icon:"1f478", condition:(v)=>v.includes("chungnam_gongju") },
   { id:"buyeo_first",        name:"백제의 숨결",      description:"부여 처음으로 색칠",           icon:"1f3ef", condition:(v)=>v.includes("chungnam_buyeo") },
   { id:"nonsan_first",       name:"이등병의 편지",    description:"논산 처음으로 색칠",           icon:"1fa96", condition:(v)=>v.includes("chungnam_nonsan") },
-  { id:"boryeong_first",     name:"머드맨",           description:"보령 처음으로 색칠",           icon:"1f938", condition:(v)=>v.includes("chungnam_boryeong") },
   { id:"chungju_first",      name:"충주맨",           description:"충주 처음으로 색칠",           icon:"1f351", condition:(v)=>v.includes("chungbuk_chungju") },
   { id:"gimje_first",        name:"지평선 축제",      description:"김제 처음으로 색칠",           icon:"1f33e", condition:(v)=>v.includes("jeonbuk_gimje") },
   { id:"yeosu_first",        name:"장범준",           description:"여수 처음으로 색칠",           icon:"1f3b5", condition:(v)=>v.includes("jeonnam_yeosu") },
-  { id:"mokpo_first",        name:"항구의 아이",      description:"목포 처음으로 색칠",           icon:"2693",  condition:(v)=>v.includes("jeonnam_mokpo") },
-  { id:"boseong_first",      name:"녹차 한잔의 여유", description:"보성 처음으로 색칠",           icon:"1f375", condition:(v)=>v.includes("jeonnam_boseong") },
   { id:"haenam_first",       name:"땅끝에 선 자",     description:"해남 처음으로 색칠",           icon:"1f30d", condition:(v)=>v.includes("jeonnam_haenam") },
   { id:"pohang_first",       name:"포항항~",          description:"포항 처음으로 색칠",           icon:"2693",  condition:(v)=>v.includes("gyeongbuk_pohang") },
-  { id:"yanggu_first",       name:"국토정중앙에 가다",description:"양구 처음으로 색칠",           icon:"1f4cd", condition:(v)=>v.includes("gangwon_yanggu") },
+  { id:"samcheok_first",     name:"척척척박사",       description:"삼척 처음으로 색칠",           icon:"1f393", condition:(v)=>v.includes("gangwon_samcheok") },
+  { id:"tongyeong_first",    name:"대통영선거",       description:"통영 처음으로 색칠",           icon:"1f5f3", condition:(v)=>v.includes("gyeongnam_tongyeong") },
+  { id:"bucheon_first",      name:"부천핸섬!",        description:"부천 처음으로 색칠",           icon:"1f60e", condition:(v)=>v.includes("gyeonggi_bucheon") },
+  { id:"hampyeong_first",    name:"나비야~나비야~",   description:"함평 처음으로 색칠",           icon:"1f98b", condition:(v)=>v.includes("jeonnam_hampyeong") },
+  { id:"jindo_first",        name:"진돗개",           description:"진도 처음으로 색칠",           icon:"1f415", condition:(v)=>v.includes("jeonnam_jindo") },
+  { id:"geoje_first",        name:"거제~야호!",       description:"거제 처음으로 색칠",           icon:"1f3dd", condition:(v)=>v.includes("gyeongnam_geoje") },
+  { id:"gwangju_gwang",      name:"광주광",           description:"광주광역시·경기도 광주 색칠",  icon:"1f4a1", condition:(v)=>v.includes("gwangju")&&v.includes("gyeonggi_gwangju") },
 
   // ═══ 광역시 ═══
   { id:"metro_expert",       name:"광역시 전문가",    description:"모든 광역시 색칠",             icon:"1f3d9",
@@ -246,6 +311,24 @@ export const BADGES = [
   { id:"three_seas",         name:"삼면이 바다",      description:"동해·서해·남해 각 1개 이상 색칠",icon:"1f1f0-1f1f7",
     condition:(v)=>cv(v,EAST_SEA_IDS)>=1&&cv(v,WEST_SEA_IDS)>=1&&cv(v,SOUTH_SEA_IDS)>=1 },
   { id:"mountain_5",         name:"산악인",           description:"한라산·지리산·설악산 권역 5개 이상",icon:"26f0", condition:(v)=>cv(v,MOUNTAIN_IDS)>=5 },
+
+  // ═══ 스포츠 ═══
+  { id:"kbo_league",         name:"KBO리그",          description:"서울·광주·대구·부산·대전·인천·창원·수원 중 5개 이상 색칠", icon:"26be",
+    condition:(v)=>cv(v,KBO_IDS)>=5 },
+  { id:"k_league",           name:"K리그",            description:"K리그 연고지 6개 이상 색칠",   icon:"26bd",
+    condition:(v)=>[
+      cv(v,GANGWON_IDS)>=1,
+      v.includes("gwangju"),
+      v.includes("gyeongbuk_gimcheon"),
+      v.includes("daejeon"),
+      v.includes("gyeonggi_bucheon"),
+      v.includes("seoul"),
+      v.includes("gyeonggi_anyang"),
+      v.includes("ulsan"),
+      v.includes("incheon"),
+      v.includes("jeju_jeju")||v.includes("jeju_seogwipo"),
+      v.includes("gyeongbuk_pohang"),
+    ].filter(Boolean).length>=6 },
 
   // ═══ 계절 ═══
   { id:"spring_traveler",    name:"벚꽃 여행자",      description:"봄(3~5월)에 10개 이상 기록",   icon:"1f338",
@@ -272,6 +355,8 @@ export const BADGES = [
     condition:(v,r)=>r.filter(x=>{const d=toDate(x.createdAt);return d&&(d.getDay()===0||d.getDay()===6)}).length>=5 },
   { id:"weekday_10",         name:"퇴사각",           description:"평일 기록 10회 이상",          icon:"1f4bc",
     condition:(v,r)=>r.filter(x=>{const d=toDate(x.createdAt);return d&&d.getDay()>=1&&d.getDay()<=5}).length>=10 },
+  { id:"monday_sick",        name:"월요병",           description:"월요일에만 5회 이상 기록",     icon:"1f62b",
+    condition:(v,r)=>r.filter(x=>{const d=toDate(x.createdAt);return d&&d.getDay()===1}).length>=5 },
   { id:"monthly_5",          name:"월간 탐험가",      description:"한 달 동안 5개 이상 기록",     icon:"1f5d3",
     condition:(v,r)=>{const c={};for(const x of r){const d=toDate(x.createdAt);if(!d)continue;const k=mk(d);c[k]=(c[k]||0)+1};return Object.values(c).some(n=>n>=5)} },
   { id:"vacation_5",         name:"방학이다!",        description:"방학 시즌(1~2월·7~8월) 5회 이상",icon:"1f3d6",
@@ -294,6 +379,25 @@ export const BADGES = [
       for(const x of r){if(!x.regionNum)continue;c[x.regionNum]=(c[x.regionNum]||0)+1}
       return Object.values(c).some(n=>n>=10)
     }},
+  { id:"gangnam_style",      name:"강남스타일",       description:"서울 10회 이상 기록",          icon:"1f57a",
+    condition:(v,r)=>r.filter(x=>SVG_TO_REGION[x.regionNum]==='seoul').length>=10 },
+  { id:"goyang_cat",         name:"고양이",           description:"고양에 2회 이상 기록",         icon:"1f431",
+    condition:(v,r)=>r.filter(x=>SVG_TO_REGION[x.regionNum]==='gyeonggi_goyang').length>=2 },
+  { id:"elon_musk",          name:"일론 머스크",      description:"화성 3회 이상 기록",           icon:"1f680",
+    condition:(v,r)=>r.filter(x=>SVG_TO_REGION[x.regionNum]==='gyeonggi_hwaseong').length>=3 },
+  { id:"parallel_universe",  name:"평행우주",         description:"다른 연도, 같은 날짜에 같은 지역 기록", icon:"1fa90",
+    condition:(v,r)=>{
+      const map={}
+      for(const x of r){
+        if(!x.regionNum)continue
+        const d=toDate(x.travelStartDate)||toDate(x.travelDate)||toDate(x.createdAt)
+        if(!d)continue
+        const key=`${x.regionNum}_${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+        if(!map[key])map[key]=new Set()
+        map[key].add(d.getFullYear())
+      }
+      return Object.values(map).some(s=>s.size>=2)
+    }},
   { id:"dawn_depart",        name:"새벽 출발",        description:"오전 6시 이전 기록 생성",      icon:"1f305",
     condition:(v,r)=>r.some(x=>{const d=toDate(x.createdAt);return d&&d.getHours()<6}) },
   { id:"night_owl_10",       name:"밤도깨비",         description:"밤 10시 이후 기록 10회 이상",  icon:"1f319",
@@ -312,6 +416,12 @@ export const BADGES = [
   { id:"ppiya_adventure", name:"삐야의 모험",    description:"배지 10개 이상 획득",   icon:"1f425", isMeta:true, condition:(v,r,n)=>n>=10 },
   { id:"ppiya_bff",       name:"삐야의 베프",    description:"배지 20개 이상 획득",   icon:"1f425", isMeta:true, condition:(v,r,n)=>n>=20 },
   { id:"ppiya_journey",   name:"삐야와 전국일주", description:"배지 50개 이상 획득",  icon:"1f425", isMeta:true, condition:(v,r,n)=>n>=50 },
+  { id:"lucky_seven",     name:"행운의 럭키 세븐",description:"색칠 7개 이상·배지 7개 이상 획득", icon:"1f340", isMeta:true, condition:(v,r,n)=>v.length>=7&&n>=7 },
+  { id:"legend_ppiya",    name:"전설의 삐야",    description:"배지 100개 이상 획득",  icon:"1f3c5", isMeta:true, condition:(v,r,n)=>n>=100 },
+  { id:"duo",             name:"둘이서 하나",    description:"2명인 팀이 10개 이상 색칠", icon:"1f46b", isMeta:true, condition:(v,r,n,ids,team)=>!!team&&team.memberCount===2&&v.length>=10 },
+  { id:"trio",            name:"영혼의 트리오",  description:"3명인 팀이 10개 이상 색칠", icon:"1f3b6", isMeta:true, condition:(v,r,n,ids,team)=>!!team&&team.memberCount===3&&v.length>=10 },
+  { id:"family",          name:"가족",           description:"4명인 팀이 10개 이상 색칠", icon:"1f3e0", isMeta:true, condition:(v,r,n,ids,team)=>!!team&&team.memberCount===4&&v.length>=10 },
+  { id:"big_family",      name:"대가족",         description:"5명 이상인 팀이 10개 이상 색칠", icon:"1f389", isMeta:true, condition:(v,r,n,ids,team)=>!!team&&team.memberCount>=5&&v.length>=10 },
 
   // ═══ 조합 배지 (특정 배지 보유 기반) ═══
   { id:"king_road",       name:"왕의 길",        description:"경주·공주·부여 색칠 + 세종대왕 배지", icon:"1f451", isMeta:true,
@@ -322,18 +432,32 @@ export const BADGES = [
     condition:(v,r,n,ids)=>ids.has("spring_traveler")&&ids.has("summer_traveler")&&ids.has("fall_traveler")&&ids.has("winter_traveler") },
   { id:"time_traveler",   name:"시간 여행자",    description:"주말부부·당일치기 고수 배지 획득",        icon:"23f0",  isMeta:true,
     condition:(v,r,n,ids)=>ids.has("weekend_5")&&ids.has("day_tripper") },
+  { id:"theme_park",      name:"놀이공원 마스터",description:"서울·용인·대구·경주 색칠",               icon:"1f3a1", isMeta:true,
+    condition:(v,r,n,ids)=>v.includes("seoul")&&v.includes("gyeonggi_yongin")&&v.includes("daegu")&&v.includes("gyeongbuk_gyeongju") },
+  { id:"meong_nyang",     name:"멍멍냥냥",       description:"고양이·진돗개 배지 획득",                icon:"1f43e", isMeta:true,
+    condition:(v,r,n,ids)=>ids.has("goyang_cat")&&ids.has("jindo_first") },
+  { id:"animal_lover",    name:"동물 애호가",    description:"멍멍냥냥·나비야~나비야~ 배지 획득",      icon:"1f9ae", isMeta:true,
+    condition:(v,r,n,ids)=>ids.has("meong_nyang")&&ids.has("hampyeong_first") },
 ]
 
 // ── 배지 계산 함수 ────────────────────────────────────────────────
-export const getEarnedBadges = (visitedIds, records = []) => {
-  const nonMeta = BADGES.filter(b => !b.isMeta && b.condition(visitedIds, records, 0, new Set()))
-  const earnedIds = new Set(nonMeta.map(b => b.id))
-  const earnedCount = nonMeta.length
-  const meta = BADGES.filter(b => b.isMeta && b.condition(visitedIds, records, earnedCount, earnedIds))
-  return [...nonMeta, ...meta]
+export const getEarnedBadges = (visitedIds, records = [], teamInfo = null) => {
+  const nonMeta = BADGES.filter(b => !b.isMeta && b.condition(visitedIds, records, 0, new Set(), teamInfo))
+  const nonMetaIds = new Set(nonMeta.map(b => b.id))
+  const nonMetaCount = nonMeta.length
+
+  // 1차 메타 배지 (non-meta 배지 기반)
+  const meta1 = BADGES.filter(b => b.isMeta && b.condition(visitedIds, records, nonMetaCount, nonMetaIds, teamInfo))
+  const allIds = new Set([...nonMetaIds, ...meta1.map(b => b.id)])
+  const allCount = nonMetaCount + meta1.length
+
+  // 2차 메타 배지 (메타 배지를 조건으로 하는 배지 — 예: 동물 애호가)
+  const meta2 = BADGES.filter(b => b.isMeta && !allIds.has(b.id) && b.condition(visitedIds, records, allCount, allIds, teamInfo))
+
+  return [...nonMeta, ...meta1, ...meta2]
 }
 
-export const getNewBadges = (prevIds, newIds, records = []) => {
-  const prevSet = new Set(getEarnedBadges(prevIds, records).map(b => b.id))
-  return getEarnedBadges(newIds, records).filter(b => !prevSet.has(b.id))
+export const getNewBadges = (prevIds, newIds, records = [], teamInfo = null) => {
+  const prevSet = new Set(getEarnedBadges(prevIds, records, teamInfo).map(b => b.id))
+  return getEarnedBadges(newIds, records, teamInfo).filter(b => !prevSet.has(b.id))
 }
