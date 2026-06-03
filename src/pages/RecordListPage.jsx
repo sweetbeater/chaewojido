@@ -128,6 +128,7 @@ export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) 
               >
                 {thumbURL && (
                   <img src={thumbURL} alt="여행 사진"
+                    onError={e => { e.currentTarget.style.display = 'none' }}
                     style={{ width: '100%', height: 180, objectFit: 'cover' }} />
                 )}
                 <div style={{ padding: '16px' }}>

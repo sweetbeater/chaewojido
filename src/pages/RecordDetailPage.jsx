@@ -412,6 +412,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                 })}
                 <img src={url} alt={`사진 ${i + 1}`}
                   onClick={() => setFullscreenPhoto(url)}
+                  onError={e => { e.currentTarget.style.display = 'none' }}
                   style={{
                     width: '100%',
                     aspectRatio: '4/5',

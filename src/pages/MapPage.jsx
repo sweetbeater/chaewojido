@@ -859,7 +859,7 @@ export default function MapPage({ user, onOpenRecord }) {
                 showPhotos={showSeoulPhotos}
                 bottomOffset='calc(env(safe-area-inset-bottom, 0px) + 148px)'
               />
-              {Object.keys(seoulGuPhotos).length > 0 && (
+              {Object.keys(effectiveSeoulGuPhotos).length > 0 && (
                 <button
                   onClick={() => setShowSeoulPhotos(v => !v)}
                   style={{
