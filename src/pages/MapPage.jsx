@@ -81,6 +81,8 @@ export default function MapPage({ user, onOpenRecord }) {
   const [selectedGu, setSelectedGu] = useState(null)
   const [seoulRecordCounts, setSeoulRecordCounts] = useState({})
   const [seoulGuPhotos, setSeoulGuPhotos] = useState({})
+  const [teamSeoulRecordCounts, setTeamSeoulRecordCounts] = useState({})
+  const [teamSeoulGuPhotos, setTeamSeoulGuPhotos] = useState({})
   const [showSeoulPhotos, setShowSeoulPhotos] = useState(true)
   const [migrating, setMigrating] = useState(false)
   const [migrationRecords, setMigrationRecords] = useState([])
@@ -138,7 +140,13 @@ export default function MapPage({ user, onOpenRecord }) {
   }, [user])
 
   useEffect(() => {
-    if (!profile?.teamId) { setTeamRegionPhotos({}); setTeamRecordCounts({}); return }
+    if (!profile?.teamId) {
+      setTeamRegionPhotos({})
+      setTeamRecordCounts({})
+      setTeamSeoulRecordCounts({})
+      setTeamSeoulGuPhotos({})
+      return
+    }
     const unsub = onSnapshot(collection(db, 'teams', profile.teamId, 'records'), snap => {
       setTeamRegionPhotos(buildRegionPhotos(snap.docs))
       const counts = {}
@@ -157,8 +165,8 @@ export default function MapPage({ user, onOpenRecord }) {
         }
       })
       setTeamRecordCounts(counts)
-      setSeoulRecordCounts(seoulCounts)
-      setSeoulGuPhotos(guPhotos)
+      setTeamSeoulRecordCounts(seoulCounts)
+      setTeamSeoulGuPhotos(guPhotos)
     })
     return unsub
   }, [profile?.teamId])
@@ -190,6 +198,8 @@ export default function MapPage({ user, onOpenRecord }) {
   const dataLoaded = isGuest || (profile !== null && (!profile?.teamId || teamData !== null))
   const effectiveRegionPhotos = profile?.teamId ? teamRegionPhotos : regionPhotos
   const effectiveRecordCounts = profile?.teamId ? teamRecordCounts : recordCounts
+  const effectiveSeoulRecordCounts = profile?.teamId ? teamSeoulRecordCounts : seoulRecordCounts
+  const effectiveSeoulGuPhotos = profile?.teamId ? teamSeoulGuPhotos : seoulGuPhotos
   const hasPhotos = Object.keys(effectiveRegionPhotos).length > 0
   const completionRate = getCompletionRate(effectiveVisitedRegions)
   const regionInfo = selectedRegion ? REGION_MAP[selectedRegion] : null
@@ -210,15 +220,14 @@ export default function MapPage({ user, onOpenRecord }) {
 
   const handlePhotoClick = (regionId) => {
     if (!showPhotoMap) return
-    // 서울은 SEOUL_REPRESENTATIVE_SVG(number 227)로 처리 — gu 기록 타입 통일
-    const svgNum = regionId === 'seoul' ? SEOUL_REPRESENTATIVE_SVG : REGION_TO_SVG[regionId]
+    const svgNum = REGION_TO_SVG[regionId]
     if (!svgNum) return
     onOpenRecord(svgNum)
     navigate('/records')
   }
 
   const handleSeoulGuPhotoClick = (gu) => {
-    onOpenRecord(SEOUL_REPRESENTATIVE_SVG, gu)
+    onOpenRecord(REGION_TO_SVG['seoul'], gu)
     navigate('/records')
   }
 
@@ -325,7 +334,7 @@ export default function MapPage({ user, onOpenRecord }) {
         if (earned.length) { playBadgeSound(); setNewBadges(earned) }
       }
     }
-    onOpenRecord(SEOUL_REPRESENTATIVE_SVG, selectedGu)
+    onOpenRecord(REGION_TO_SVG['seoul'], selectedGu)
     navigate('/record')
   }
 
@@ -548,12 +557,12 @@ export default function MapPage({ user, onOpenRecord }) {
             <div style={{ padding: '14px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
                 <h2 style={{ fontSize: 17, fontWeight: 800, color: '#2D2D2D', letterSpacing: '-0.3px' }}>
-                  {hasRecs ? '이 기록은 서울 어느 구인가요?' : '어느 구를 색칠할까요?'}
+                  앱이 업데이트 됐어요!
                 </h2>
                 <p style={{ fontSize: 13, color: '#B0B0B0', marginTop: 2 }}>
                   {hasRecs
-                    ? `기록 ${migrationIdx + 1} / ${migrationRecords.length} — 지도에서 구를 선택하세요`
-                    : '지도에서 구를 선택하세요'}
+                    ? `이전에 서울 지역을 기록했을 때, 어느 지역을 방문하셨나요? 선택하지 않으면 기록이 삭제됩니다. 언제든 지역은 변경할 수 있어요. (${migrationIdx + 1}/${migrationRecords.length})`
+                    : '이전에 서울 지역을 색칠했을 때, 어느 지역을 방문하셨나요? 선택하지 않으면 색칠이 삭제됩니다. 언제든 지역은 변경할 수 있어요.'}
                 </p>
               </div>
               <button onClick={handleMigrationCancel} style={{
@@ -697,7 +706,7 @@ export default function MapPage({ user, onOpenRecord }) {
             <input
               autoFocus type="text" inputMode="search"
               value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-              placeholder="지역 검색(예: 강남구, 서대문구...)"
+              placeholder="지역 검색(예: 서울, 부산...)"
               style={{
                 flex: 1, height: '100%', padding: '0 14px', borderRadius: 18,
                 border: 'none', outline: 'none', fontSize: 13,
@@ -719,7 +728,7 @@ export default function MapPage({ user, onOpenRecord }) {
           }}>
             <img src="/도트돋보기삐야.png" alt="" style={{ width: 40, height: 27, flexShrink: 0, objectFit: 'contain' }} />
             <span style={{ fontSize: 13, color: '#555', fontWeight: 500 }}>
-              지역 검색(예: 강남구, 서대문구...)
+              지역 검색(예: 서울, 부산...)
             </span>
           </button>
         )}
@@ -845,15 +854,16 @@ export default function MapPage({ user, onOpenRecord }) {
                 selectedGu={selectedGu}
                 onGuClick={gu => { setSelectedGu(gu); setSelectedRegion(null) }}
                 onPhotoClick={handleSeoulGuPhotoClick}
-                recordCounts={seoulRecordCounts}
-                guPhotos={seoulGuPhotos}
+                recordCounts={effectiveSeoulRecordCounts}
+                guPhotos={effectiveSeoulGuPhotos}
                 showPhotos={showSeoulPhotos}
+                bottomOffset='calc(env(safe-area-inset-bottom, 0px) + 148px)'
               />
               {Object.keys(seoulGuPhotos).length > 0 && (
                 <button
                   onClick={() => setShowSeoulPhotos(v => !v)}
                   style={{
-                    position: 'absolute', bottom: 12, left: 12, zIndex: 10,
+                    position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)', right: 12, zIndex: 10,
                     background: showSeoulPhotos ? '#FF8FAB' : 'rgba(255,255,255,0.9)',
                     color: showSeoulPhotos ? 'white' : '#FF8FAB',
                     border: '1.5px solid #FFD6E0', borderRadius: 20, padding: '6px 14px',
@@ -1032,7 +1042,7 @@ export default function MapPage({ user, onOpenRecord }) {
             </div>
             {isGuVisited ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { onOpenRecord(SEOUL_REPRESENTATIVE_SVG, selectedGu); navigate('/records') }} style={{ ...compactBtn }}>
+                <button onClick={() => { onOpenRecord(REGION_TO_SVG['seoul'], selectedGu); navigate('/records') }} style={{ ...compactBtn }}>
                   📖 기록 보기
                 </button>
                 <button onClick={markGuAndRecord} style={{ ...compactBtn, background: '#FFE8EF', color: '#FF7BA9' }}>

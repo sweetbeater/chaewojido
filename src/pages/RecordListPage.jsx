@@ -73,7 +73,7 @@ export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) 
     // 8초 후에도 서버 미확인 시 강제로 확정 (네트워크 불량 대비)
     const serverTimeout = setTimeout(() => setServerConfirmed(true), 8000)
     return () => { unsub(); clearTimeout(timeout); clearTimeout(serverTimeout) }
-  }, [user, regionNum, profile])
+  }, [user, regionNum, gu, profile])
 
   const handleSelectRecord = (record) => {
     const teamId = profile?.teamId || null
