@@ -12,6 +12,7 @@ import {
 } from '../utils/regions'
 import { getNewBadges } from '../utils/badges'
 import { playPaintSound, playBadgeSound } from '../utils/sounds'
+import { trackEvent } from '../firebase'
 
 const buildRegionPhotos = (docs) => {
   const lists = {}
@@ -279,6 +280,7 @@ export default function MapPage({ user, onOpenRecord }) {
     playPaintSound()
     const prev = visitedRegions
     await addVisited(selectedRegion)
+    trackEvent('region_painted', { region_name: regionInfo?.name || String(selectedRegion), mode: profile?.teamId ? 'team' : 'personal' })
     const next = [...new Set([...prev, selectedRegion])]
     const earned = getNewBadges(
       prev.map(n => REGION_MAP[n]?.id).filter(Boolean),
@@ -314,6 +316,7 @@ export default function MapPage({ user, onOpenRecord }) {
     const isSeoulNew = seoulGus.length === 0 && !visitedRegions.some(n => SVG_TO_REGION[String(n)] === 'seoul')
     const prevIds = effectiveVisitedRegions.map(n => REGION_MAP[n]?.id).filter(Boolean)
     await addGu(selectedGu)
+    trackEvent('seoul_gu_painted', { gu_name: selectedGu, mode: profile?.teamId ? 'team' : 'personal' })
     if (isSeoulNew) {
       const nextIds = [...visitedRegions, SEOUL_REPRESENTATIVE_SVG].map(n => REGION_MAP[n]?.id).filter(Boolean)
       const earned = getNewBadges(prevIds, nextIds, records)

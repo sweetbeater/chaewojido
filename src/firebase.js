@@ -3,6 +3,7 @@ import { initializeAuth, indexedDBLocalPersistence, browserLocalPersistence } fr
 import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 import { getMessaging, getToken, deleteToken, onMessage } from 'firebase/messaging'
+import { getAnalytics, logEvent } from 'firebase/analytics'
 import { Capacitor } from '@capacitor/core'
 
 const isNative = Capacitor.isNativePlatform()
@@ -26,6 +27,13 @@ export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
 })
 export const storage = getStorage(app)
+
+let analytics = null
+try { analytics = getAnalytics(app) } catch (_) {}
+export const trackEvent = (name, params = {}) => {
+  if (!analytics) return
+  try { logEvent(analytics, name, params) } catch (_) {}
+}
 
 // 웹 전용: Firebase Web Messaging (서비스 워커 기반)
 let messaging = null

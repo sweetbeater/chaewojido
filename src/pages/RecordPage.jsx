@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { doc, setDoc, collection, getDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../firebase'
+import { db, storage, trackEvent } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { REGION_MAP } from '../utils/regions'
 import DatePicker from '../components/DatePicker'
@@ -84,6 +84,7 @@ export default function RecordPage({ user, regionNum, gu }) {
         const personalRef = doc(collection(db, 'users', user.uid, 'records'))
         await setDoc(personalRef, recordData)
       }
+      trackEvent('record_created', { region_name: regionInfo?.name || String(regionNum), has_photo: photoURLs.length > 0, mode: profile?.teamId ? 'team' : 'personal' })
       setSaveStatus('저장됨 ✓')
       setTimeout(() => navigate('/'), 700)
     } catch (err) {
