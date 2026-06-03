@@ -37,7 +37,7 @@ export default function TabBar({ hasTeam }) {
         return (
           <button
             key={tab.path}
-            onClick={() => navigate(tab.path)}
+            onClick={() => navigate(tab.path, tab.path === '/' ? { state: { activeTab: 'korea' } } : undefined)}
             style={{
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', gap: 2,

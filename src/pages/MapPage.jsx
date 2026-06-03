@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { doc, onSnapshot, setDoc, updateDoc, arrayUnion, collection, getDocs, query, where, deleteDoc } from 'firebase/firestore'
 import { db } from '../firebase'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import KoreaMap from '../components/KoreaMap'
 import SeoulMap from '../components/SeoulMap'
 import BadgePopup from '../components/BadgePopup'
@@ -99,7 +99,14 @@ export default function MapPage({ user, onOpenRecord }) {
     try { return JSON.parse(localStorage.getItem('guestVisitedRegions') || '[]') } catch { return [] }
   })
   const navigate = useNavigate()
+  const location = useLocation()
   const { confirm, modal } = useConfirm()
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab)
+    }
+  }, [location.key])
 
   const isGuest = !!user?.isAnonymous
 
@@ -229,7 +236,7 @@ export default function MapPage({ user, onOpenRecord }) {
 
   const handleSeoulGuPhotoClick = (gu) => {
     onOpenRecord(REGION_TO_SVG['seoul'], gu)
-    navigate('/records')
+    navigate('/records', { state: { activeTab: 'seoul' } })
   }
 
   const addVisited = async (svgNum) => {
@@ -1045,7 +1052,7 @@ export default function MapPage({ user, onOpenRecord }) {
             </div>
             {isGuVisited ? (
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { onOpenRecord(REGION_TO_SVG['seoul'], selectedGu); navigate('/records') }} style={{ ...compactBtn }}>
+                <button onClick={() => { onOpenRecord(REGION_TO_SVG['seoul'], selectedGu); navigate('/records', { state: { activeTab: 'seoul' } }) }} style={{ ...compactBtn }}>
                   📖 기록 보기
                 </button>
                 <button onClick={markGuAndRecord} style={{ ...compactBtn, background: '#FFE8EF', color: '#FF7BA9' }}>

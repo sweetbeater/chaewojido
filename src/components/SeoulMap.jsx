@@ -86,10 +86,10 @@ export default function SeoulMap({ visitedGus = [], selectedGu = null, onGuClick
     const ch = container.clientHeight
     if (!cw || !ch) return
 
-    // SVG 좌표 → 픽셀 변환 (preserveAspectRatio="xMidYMid meet" 기준)
+    // SVG 좌표 → 픽셀 변환 (preserveAspectRatio="xMidYMin meet" 기준)
     const sBase = Math.min(cw / VBW, ch / VBH)
     const ox = (cw - VBW * sBase) / 2
-    const oy = (ch - VBH * sBase) / 2
+    const oy = 0
     const { s: ts, tx, ty } = transformRef.current
 
     overlay.innerHTML = ''
@@ -259,6 +259,7 @@ export default function SeoulMap({ visitedGus = [], selectedGu = null, onGuClick
         ref={svgRef}
         xmlns="http://www.w3.org/2000/svg"
         viewBox={`${VBX} ${VBY} ${VBW} ${VBH}`}
+        preserveAspectRatio="xMidYMin meet"
         style={{ width: '100%', height: '100%', display: 'block', transformOrigin: '0 0' }}
         stroke="#6B6B6B"
         strokeWidth="1"

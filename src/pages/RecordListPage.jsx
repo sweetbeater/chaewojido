@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { collection, query, where, orderBy, doc, getDoc, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { REGION_MAP } from '../utils/regions'
 
 export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) {
@@ -10,6 +10,7 @@ export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) 
   const [serverConfirmed, setServerConfirmed] = useState(false)
   const [profile, setProfile] = useState(null)
   const navigate = useNavigate()
+  const location = useLocation()
 
   const regionInfo = gu ? { name: `서울 ${gu}` } : REGION_MAP[regionNum]
 
@@ -83,7 +84,7 @@ export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) 
 
   return (
     <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px calc(env(safe-area-inset-bottom, 0px) + 100px)', background: '#FFF9FB', minHeight: '100vh' }}>
-      <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', fontSize: 22, color: '#FF8FAB', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer', minHeight: 44 }}>←</button>
+      <button onClick={() => navigate('/', { state: { activeTab: location.state?.activeTab } })} style={{ background: 'none', border: 'none', fontSize: 22, color: '#FF8FAB', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer', minHeight: 44 }}>←</button>
       <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 4 }}>
         {regionInfo?.name || '지역'} 기록
       </h2>
