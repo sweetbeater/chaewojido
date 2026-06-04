@@ -56,6 +56,9 @@ const HEART_PARTICLES = [
   { x: '88%', dur: '1.8s', delay: '0.75s', size: '24px' },
 ]
 
+// 서울 탭에서 /record 이동 후 back 시 서울 탭 복원용 플래그
+let _returnToSeoulOnBack = false
+
 const TOP_POPUP_REGIONS = new Set([
   '1','2',
   '7','8','9','19','22','23',
@@ -89,6 +92,8 @@ export default function MapPage({ user, onOpenRecord }) {
   const [migrationRecords, setMigrationRecords] = useState([])
   const [migrationIdx, setMigrationIdx] = useState(0)
   const [migrationAssignments, setMigrationAssignments] = useState({})
+  const [pendingRecord, setPendingRecord] = useState(null)
+
   const [guestSeoulGus, setGuestSeoulGus] = useState(() => {
     if (!user?.isAnonymous) return []
     try { return JSON.parse(localStorage.getItem('guestSeoulGus') || '[]') } catch { return [] }
@@ -103,7 +108,10 @@ export default function MapPage({ user, onOpenRecord }) {
   const { confirm, modal } = useConfirm()
 
   useEffect(() => {
-    if (location.state?.activeTab) {
+    if (_returnToSeoulOnBack) {
+      _returnToSeoulOnBack = false
+      setActiveTab('seoul')
+    } else if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab)
     }
   }, [location.key])
@@ -310,7 +318,12 @@ export default function MapPage({ user, onOpenRecord }) {
         next.map(n => REGION_MAP[n]?.id).filter(Boolean),
         records
       )
-      if (earned.length) { playBadgeSound(); setNewBadges(earned) }
+      if (earned.length) {
+        playBadgeSound()
+        setNewBadges(earned)
+        setPendingRecord({ type: 'korea', svgNum: selectedRegion })
+        return
+      }
     }
     onOpenRecord(selectedRegion)
     navigate('/record')
@@ -341,9 +354,15 @@ export default function MapPage({ user, onOpenRecord }) {
       if (isSeoulNew) {
         const nextIds = [...visitedRegions, SEOUL_REPRESENTATIVE_SVG].map(n => REGION_MAP[n]?.id).filter(Boolean)
         const earned = getNewBadges(prevIds, nextIds, records)
-        if (earned.length) { playBadgeSound(); setNewBadges(earned) }
+        if (earned.length) {
+          playBadgeSound()
+          setNewBadges(earned)
+          setPendingRecord({ type: 'seoul', gu: selectedGu })
+          return
+        }
       }
     }
+    _returnToSeoulOnBack = true
     onOpenRecord(REGION_TO_SVG['seoul'], selectedGu)
     navigate('/record')
   }
@@ -546,7 +565,19 @@ export default function MapPage({ user, onOpenRecord }) {
       display: 'flex', flexDirection: 'column',
       background: "url('/바다픽셀.png') center/cover no-repeat",
     }}>
-      {newBadges.length > 0 && <BadgePopup badges={newBadges} onClose={() => setNewBadges([])} />}
+      {newBadges.length > 0 && <BadgePopup badges={newBadges} onClose={() => {
+        setNewBadges([])
+        if (pendingRecord) {
+          if (pendingRecord.type === 'seoul') {
+            _returnToSeoulOnBack = true
+            onOpenRecord(REGION_TO_SVG['seoul'], pendingRecord.gu)
+          } else {
+            onOpenRecord(pendingRecord.svgNum)
+          }
+          navigate('/record')
+          setPendingRecord(null)
+        }
+      }} />}
       {modal}
 
       {/* ── 서울 마이그레이션 오버레이 ── */}
@@ -805,7 +836,7 @@ export default function MapPage({ user, onOpenRecord }) {
         <button
           onClick={() => { setActiveTab('korea'); setSelectedGu(null) }}
           style={{
-            flex: 1, padding: '7px 0', borderRadius: 12, fontSize: 13, fontWeight: 700,
+            flex: 1, padding: '4px 0', borderRadius: 12, fontSize: 13, fontWeight: 700,
             background: activeTab === 'korea' ? '#FF7BA9' : 'rgba(255,255,255,0.72)',
             color: activeTab === 'korea' ? 'white' : '#888',
             border: activeTab === 'korea' ? 'none' : '1px solid rgba(255,180,200,0.5)',
@@ -817,7 +848,7 @@ export default function MapPage({ user, onOpenRecord }) {
         <button
           onClick={() => switchToSeoulTab()}
           style={{
-            flex: 1, padding: '7px 0', borderRadius: 12, fontSize: 13, fontWeight: 700,
+            flex: 1, padding: '4px 0', borderRadius: 12, fontSize: 13, fontWeight: 700,
             background: activeTab === 'seoul' ? '#FF7BA9' : 'rgba(255,255,255,0.72)',
             color: activeTab === 'seoul' ? 'white' : '#888',
             border: activeTab === 'seoul' ? 'none' : '1px solid rgba(255,180,200,0.5)',
@@ -894,7 +925,7 @@ export default function MapPage({ user, onOpenRecord }) {
         const isTop = TOP_POPUP_REGIONS.has(selectedRegion)
         return (
           <div style={isTop ? {
-            position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 120px)',
+            position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 155px)',
             left: '0px', right: '0px', zIndex: 150,
             background: 'white', borderRadius: '0 0 20px 20px',
             padding: '14px 16px 16px',
@@ -952,7 +983,7 @@ export default function MapPage({ user, onOpenRecord }) {
         const isTop = TOP_POPUP_REGIONS.has(selectedRegion)
         return (
           <div style={isTop ? {
-            position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 120px)',
+            position: 'fixed', top: 'calc(env(safe-area-inset-top, 0px) + 155px)',
             left: '0px', right: '0px', zIndex: 150,
             background: 'white', borderRadius: '0 0 20px 20px',
             padding: '14px 16px 6px',

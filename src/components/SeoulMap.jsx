@@ -29,8 +29,8 @@ const PATHS = [
   "M 640.63 312.41 620.46 322.22 596.69 316.83 579.95 259.69 583.25 229.8 581.41 210.79 612.45 199.1 650.15 199.07 670.72 202.62 674.16 237.53 666.48 248.38 656.37 289.09 640.63 312.41 Z",
 ]
 
-// 강서구(x≈1)·강동구(x≈799) 좌우 여백 균등 → VBX=-38 / 도봉구 y≈1·서초구 y≈665 상하 여백 균등 → VBY=-9
-const VBX = -38, VBY = -9, VBW = 876, VBH = 684
+// 강서구(x≈1)·강동구(x≈799) 좌우 여백 균등 → VBX=-38 / 상단 여백 확장으로 지도 내려배치
+const VBX = -38, VBY = -159, VBW = 876, VBH = 834
 
 const LABEL_POS = [
   [570,504],[728,371],[476,144],[103,346],[338,569],
@@ -274,7 +274,7 @@ export default function SeoulMap({ visitedGus = [], selectedGu = null, onGuClick
           const visited = visitedGus.includes(gu)
           const selected = selectedGu === gu
           const count = recordCounts[gu] || 0
-          const fill = selected ? '#FF5499' : visited ? visitedColor(count) : '#FAF5EE'
+          const fill = selected && visited ? '#FFBC00' : selected ? '#FF5499' : visited ? visitedColor(count) : '#FAF5EE'
           const isJustColored = justColoredGu === gu
           return (
             <path
@@ -289,7 +289,7 @@ export default function SeoulMap({ visitedGus = [], selectedGu = null, onGuClick
                 transformOrigin: 'center',
                 ...(selected ? {
                   animation: 'regionPulse 1.4s ease-in-out infinite',
-                  filter: 'drop-shadow(0 0 5px rgba(255,50,110,0.7))',
+                  filter: visited ? 'drop-shadow(0 0 5px rgba(255,188,0,0.7))' : 'drop-shadow(0 0 5px rgba(255,50,110,0.7))',
                 } : isJustColored ? {
                   animation: 'regionPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 } : {

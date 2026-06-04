@@ -125,6 +125,8 @@ export default function KoreaMap({ visitedRegions = [], highlightedRegion, recor
         const cy = b.y + b.height / 2
         // 울릉도·독도는 translate 오프셋 반영
         if (regionId === 'gyeongbuk_ulleung' || regionId === 'dokdo') cx += ULLEUNG_TX
+        // 인천은 서쪽 섬들로 bbox 중심이 바다 위에 오므로 내륙 방향(오른쪽)으로 보정
+        if (regionId === 'incheon') cx += 50
         svgCentersRef.current[regionId] = { cx, cy }
       } catch (_) {}
     }
