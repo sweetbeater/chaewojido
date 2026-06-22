@@ -23,11 +23,22 @@ export default function ProfilePage({ user }) {
 
   useEffect(() => {
     if (!isNativeApp) return
-    import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {
-      FirebaseMessaging.checkPermissions().then(({ receive }) => {
-        setNativePermDenied(receive === 'denied')
-      }).catch(() => {})
-    })
+    let cancelled = false
+    const checkPermission = () => {
+      import('@capacitor-firebase/messaging').then(({ FirebaseMessaging }) => {
+        FirebaseMessaging.checkPermissions().then(({ receive }) => {
+          if (!cancelled) setNativePermDenied(receive === 'denied')
+        }).catch(() => {})
+      })
+    }
+    checkPermission()
+    // iOS 설정에서 알림을 바꾸고 앱으로 돌아오면 권한을 다시 확인해 상태를 동기화
+    const onVisible = () => { if (document.visibilityState === 'visible') checkPermission() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [isNativeApp])
 
   // 네이티브(WKWebView)에서는 Notification API 없음 → checkPermissions + fcmToken으로 상태 판단
