@@ -1,0 +1,108 @@
+rules_version = '2';
+
+// 채워지도 Firestore 보안 규칙
+// 원칙: 로그인 필수 + 본인 데이터만 + 팀 데이터는 팀원만.
+// 컬렉션 목록(list) 조회는 전면 차단(문서 ID를 알아야만 get 가능).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── 헬퍼 ──
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    // 내 프로필 문서의 teamId (없으면 null)
+    function myTeamId() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId
+        : null;
+    }
+    // 대상 사용자(uid)가 나와 같은 팀인지
+    function sharesTeamWithUser(uid) {
+      return signedIn()
+        && myTeamId() != null
+        && exists(/databases/$(database)/documents/users/$(uid))
+        && get(/databases/$(database)/documents/users/$(uid)).data.teamId == myTeamId();
+    }
+    // 내가 해당 팀의 멤버인지
+    function isMember(teamId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/teams/$(teamId))
+        && request.auth.uid in get(/databases/$(database)/documents/teams/$(teamId)).data.members;
+    }
+
+    // ── 사용자 문서 ──
+    match /users/{uid} {
+      // 본인 또는 같은 팀원만 읽기 (팀원 프로필 표시용)
+      allow get: if isSelf(uid)
+        || (resource.data.teamId != null && resource.data.teamId == myTeamId());
+      allow list: if false;
+
+      // 본인 문서는 자유롭게 생성/수정/삭제
+      allow create, update, delete: if isSelf(uid);
+
+      // 팀 해체 시 팀원이 상대방 문서를 초기화(teamId/지도만) — 크로스 유저 쓰기 한정
+      allow update: if sharesTeamWithUser(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['teamId', 'visitedRegions', 'seoulGus']);
+
+      // 개인 기록
+      match /records/{recordId} {
+        // 본인 + 팀 해체 시 상대 기록 정리(목록/삭제) 허용
+        allow read, delete: if isSelf(uid) || sharesTeamWithUser(uid);
+        allow create, update: if isSelf(uid);
+      }
+    }
+
+    // ── 팀 ──
+    match /teams/{teamId} {
+      // 가입 전 코드(=문서 ID)로 존재 확인해야 하므로 로그인 사용자에게 get 허용
+      allow get: if signedIn();
+      allow list: if false;
+
+      // 생성: 멤버 목록에 자기 자신만 들어있어야 함
+      allow create: if signedIn()
+        && request.resource.data.members == [request.auth.uid];
+
+      // 수정: 기존 멤버이거나, (가입) 본인만 추가하는 경우
+      allow update: if isMember(teamId)
+        || (signedIn()
+            && request.resource.data.members.hasAll(resource.data.members)
+            && request.resource.data.members.removeAll(resource.data.members) == [request.auth.uid]);
+
+      // 삭제(해체): 멤버만
+      allow delete: if isMember(teamId);
+
+      // 팀 기록
+      match /records/{recordId} {
+        allow read: if isMember(teamId);
+        allow create: if isMember(teamId)
+          && request.resource.data.authorUid == request.auth.uid;
+        // 작성자 본인 수정, 또는 좋아요(likes)만 변경
+        allow update: if isMember(teamId)
+          && (resource.data.authorUid == request.auth.uid
+              || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']));
+        // 작성자 삭제 + 팀 해체 시 멤버가 일괄 삭제
+        allow delete: if isMember(teamId);
+
+        // 댓글
+        match /comments/{commentId} {
+          allow read: if isMember(teamId);
+          allow create: if isMember(teamId)
+            && request.resource.data.authorUid == request.auth.uid;
+          allow delete: if isMember(teamId)
+            && resource.data.authorUid == request.auth.uid;
+          allow update: if false;
+        }
+      }
+    }
+
+    // 그 외 모든 경로 차단
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

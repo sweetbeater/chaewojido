@@ -161,6 +161,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
 
   const handleEditSave = async () => {
     if (!editTitle.trim()) return alert('제목을 입력해주세요')
+    if (editTravelEndDate < editTravelDate) return alert('종료일은 시작일보다 빠를 수 없어요')
     setEditSaveStatus('준비 중...')
     try {
       const newURLs = []
@@ -172,7 +173,6 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
       }
       setEditSaveStatus('저장 중...')
       const allPhotoURLs = [...editExistingURLs, ...newURLs]
-      if (editTravelEndDate < editTravelDate) return alert('종료일은 시작일보다 빠를 수 없어요')
       const [sy, sm, sd] = editTravelDate.split('-').map(Number)
       const [ey, em, ed] = editTravelEndDate.split('-').map(Number)
       const updateRef = teamId

@@ -90,7 +90,11 @@ export default function TeamPage({ user, onSelectRecord }) {
       '⚠️ 개인 지도에 색칠된 지역이 있어요.\n팀 생성 시 개인 지도와 기록이 모두 초기화됩니다.\n계속하시겠어요?'
     )
     if (!ok) return
-    const code = generateCode()
+    // 코드 충돌 방지: 이미 존재하는 코드면 재생성
+    let code = generateCode()
+    while ((await getDoc(doc(db, 'teams', code))).exists()) {
+      code = generateCode()
+    }
     await setDoc(doc(db, 'teams', code), {
       name: teamName,
       code,

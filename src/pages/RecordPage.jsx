@@ -49,6 +49,7 @@ export default function RecordPage({ user, regionNum, gu }) {
 
   const handleSubmit = async () => {
     if (!title.trim()) return alert('제목을 입력해주세요')
+    if (travelEndDate < travelStartDate) return alert('종료일은 시작일보다 빠를 수 없어요')
     setSaveStatus('준비 중...')
     try {
       const photoURLs = []
@@ -59,7 +60,6 @@ export default function RecordPage({ user, regionNum, gu }) {
         photoURLs.push(await getDownloadURL(storageRef))
       }
       setSaveStatus('저장 중...')
-      if (travelEndDate < travelStartDate) return alert('종료일은 시작일보다 빠를 수 없어요')
       const [sy, sm, sd] = travelStartDate.split('-').map(Number)
       const [ey, em, ed] = travelEndDate.split('-').map(Number)
       const recordData = {

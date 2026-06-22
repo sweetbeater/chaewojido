@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// 채워지도 Storage 보안 규칙
+// 사진은 본인만 업로드, 읽기는 로그인 사용자 허용(공유 URL 토큰은 규칙과 무관하게 동작).
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    // 10MB 미만 이미지 파일만 허용
+    function validImage() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // 기록 사진: records/{uid}/...
+    match /records/{uid}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if isOwner(uid) && validImage();
+    }
+
+    // 프로필 사진: profiles/{uid}
+    match /profiles/{uid} {
+      allow read: if request.auth != null;
+      allow write: if isOwner(uid) && validImage();
+    }
+
+    // 그 외 모든 경로 차단
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
