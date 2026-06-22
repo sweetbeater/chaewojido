@@ -169,7 +169,8 @@ export default function EditProfilePage({ user }) {
   }
 
   return (
-    <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px 100px', background: '#FFF9FB', minHeight: '100vh' }}>
+    <div style={{ position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, background: '#FFF9FB', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+    <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px 100px' }}>
       <button onClick={() => navigate('/profile')} style={{ background: 'none', border: 'none', fontSize: 22, color: '#FF8FAB', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer', minHeight: 44 }}>←</button>
       <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 24 }}>프로필 수정</h2>
 
@@ -273,6 +274,7 @@ export default function EditProfilePage({ user }) {
           </button>
         </div>
       )}
+    </div>
     </div>
   )
 }

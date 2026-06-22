@@ -83,7 +83,8 @@ export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) 
   }
 
   return (
-    <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px calc(env(safe-area-inset-bottom, 0px) + 100px)', background: '#FFF9FB', minHeight: '100vh' }}>
+    <div style={{ position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, background: '#FFF9FB', overflowY: 'auto', overflowX: 'hidden', WebkitOverflowScrolling: 'touch' }}>
+    <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 20px calc(env(safe-area-inset-bottom, 0px) + 100px)' }}>
       <button onClick={() => navigate('/', { state: { activeTab: location.state?.activeTab } })} style={{ background: 'none', border: 'none', fontSize: 22, color: '#FF8FAB', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, cursor: 'pointer', minHeight: 44 }}>←</button>
       <h2 style={{ fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 4 }}>
         {regionInfo?.name || '지역'} 기록
@@ -171,6 +172,7 @@ export default function RecordListPage({ user, regionNum, gu, onSelectRecord }) 
           </button>
         </div>
       )}
+    </div>
     </div>
   )
 }
