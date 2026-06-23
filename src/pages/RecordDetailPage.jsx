@@ -5,6 +5,10 @@ import { db, storage } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { useConfirm } from '../components/ConfirmModal'
 import DatePicker from '../components/DatePicker'
+import PhotoLoadingOverlay from '../components/PhotoLoadingOverlay'
+import { usePhotoPicker } from '../hooks/usePhotoPicker'
+
+const MAX_PHOTOS = 15
 
 const ROTATIONS = [-1.4, 0.9, -0.7, 1.2, -1.0, 0.6]
 
@@ -41,6 +45,7 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
   const [editTravelDate, setEditTravelDate] = useState('')
   const [editTravelEndDate, setEditTravelEndDate] = useState('')
   const fileInputRef = useRef(null)
+  const { loadingPhotos, openPicker, stopLoading } = usePhotoPicker(fileInputRef, editing)
   const navigate = useNavigate()
   const { confirm, modal } = useConfirm()
 
@@ -268,22 +273,28 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
           accept="image/*"
           multiple
           onChange={e => {
+            stopLoading()
             const files = Array.from(e.target.files || [])
             if (!files.length) return
             const total = editExistingURLs.length + editPhotos.length
-            const added = files.slice(0, 15 - total)
+            const remaining = MAX_PHOTOS - total
+            const added = files.slice(0, remaining)
             setEditPhotos(prev => [...prev, ...added])
             setEditPreviews(prev => [...prev, ...added.map(f => URL.createObjectURL(f))])
             e.target.value = ''
+            if (files.length > remaining) {
+              alert(`사진은 최대 ${MAX_PHOTOS}장까지 추가할 수 있어요.\n앞에서부터 ${added.length}장만 추가했어요.`)
+            }
           }}
           style={{ display: 'none' }}
         />
         <button onClick={() => setEditing(false)} style={{ background: 'none', fontSize: 22, color: '#FF7BA9', padding: '10px 16px 10px 4px', display: 'flex', alignItems: 'center', marginBottom: 8, minHeight: 44 }}>←</button>
         <h2 style={{ fontSize: 22, fontWeight: 800, color: '#333', marginBottom: 20 }}>기록 수정</h2>
 
+        {loadingPhotos && <PhotoLoadingOverlay />}
         {editExistingURLs.length === 0 && editPreviews.length === 0 ? (
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={openPicker}
             style={{
               display: 'flex', width: '100%', height: 160,
               borderRadius: 20, border: '2px dashed #FFD6E0',
@@ -318,13 +329,13 @@ export default function RecordDetailPage({ user, recordId, teamId }) {
                 >✕</button>
               </div>
             ))}
-            {(editExistingURLs.length + editPhotos.length) < 15 && (
+            {(editExistingURLs.length + editPhotos.length) < MAX_PHOTOS && (
               <div
-                onClick={() => fileInputRef.current?.click()}
+                onClick={openPicker}
                 style={{ flexShrink: 0, width: 120, height: 120, borderRadius: 14, border: '2px dashed #FFD6E0', background: '#FFF0F5', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 4 }}
               >
                 <span style={{ fontSize: 22 }}>📷</span>
-                <span style={{ fontSize: 13, color: '#FFB3C6' }}>{editExistingURLs.length + editPhotos.length}/15</span>
+                <span style={{ fontSize: 13, color: '#FFB3C6' }}>{editExistingURLs.length + editPhotos.length}/{MAX_PHOTOS}</span>
               </div>
             )}
           </div>

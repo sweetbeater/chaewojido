@@ -74,6 +74,10 @@ a {
   to   { transform: translateY(0); }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* 배지 획득 팝업 - 아이콘 스핀 */
 @keyframes badgeSpin {
   0%   { transform: scale(0) rotate(-180deg); }

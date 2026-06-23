@@ -5,6 +5,8 @@ import { db, storage, trackEvent } from '../firebase'
 import { useNavigate } from 'react-router-dom'
 import { REGION_MAP } from '../utils/regions'
 import DatePicker from '../components/DatePicker'
+import PhotoLoadingOverlay from '../components/PhotoLoadingOverlay'
+import { usePhotoPicker } from '../hooks/usePhotoPicker'
 
 const MAX_PHOTOS = 15
 
@@ -23,6 +25,7 @@ export default function RecordPage({ user, regionNum, gu }) {
   const [saveStatus, setSaveStatus] = useState('')
   const [profile, setProfile] = useState(null)
   const fileInputRef = useRef(null)
+  const { loadingPhotos, openPicker, stopLoading } = usePhotoPicker(fileInputRef)
   const navigate = useNavigate()
   const regionInfo = gu ? { name: `서울특별시 ${gu}` } : REGION_MAP[regionNum]
 
@@ -34,12 +37,17 @@ export default function RecordPage({ user, regionNum, gu }) {
   }, [user])
 
   const handlePhotos = (e) => {
+    stopLoading()
     const files = Array.from(e.target.files || [])
     if (!files.length) return
-    const added = files.slice(0, MAX_PHOTOS - photos.length)
+    const remaining = MAX_PHOTOS - photos.length
+    const added = files.slice(0, remaining)
     setPhotos(prev => [...prev, ...added])
     setPreviews(prev => [...prev, ...added.map(f => URL.createObjectURL(f))])
     e.target.value = ''
+    if (files.length > remaining) {
+      alert(`사진은 최대 ${MAX_PHOTOS}장까지 추가할 수 있어요.\n앞에서부터 ${added.length}장만 추가했어요.`)
+    }
   }
 
   const removePhoto = (idx) => {
@@ -101,6 +109,7 @@ export default function RecordPage({ user, regionNum, gu }) {
       background: '#FFFDF8', overflowY: 'auto', overflowX: 'hidden',
       WebkitOverflowScrolling: 'touch',
     }}>
+      {loadingPhotos && <PhotoLoadingOverlay />}
       <input
         ref={fileInputRef}
         type="file"
@@ -145,7 +154,7 @@ export default function RecordPage({ user, regionNum, gu }) {
               ))}
               {photos.length < MAX_PHOTOS && (
                 <div
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={openPicker}
                   style={{
                     flexShrink: 0, width: 120, height: 120, borderRadius: 14,
                     border: '2px dashed #FFD6E0', background: '#FFF0F5',
@@ -161,7 +170,7 @@ export default function RecordPage({ user, regionNum, gu }) {
           </div>
         ) : (
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={openPicker}
             style={{
               display: 'flex', width: '100%', height: 160,
               borderRadius: 20, border: '2px dashed #FFD6E0',
